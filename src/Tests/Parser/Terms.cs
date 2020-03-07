@@ -43,19 +43,32 @@ namespace Tests.Parser
             else Assert.False(expectedMatch);
         }
 
-        //[Theory]
-        //[InlineData("A", true, "A")]
-        //[InlineData("A_Variable", true, "A_Variable")]
-        //[InlineData("a_constant", false, "")]
-        //[InlineData("1234", false, "")]
-        //[InlineData("complex(functor(Var, Val))", true, "Var")]
-        //public void RegexMatchesAllComplexTypes(string arg, bool expectedMatch, string expectedValue)
-        //{
-        //    if (RegularExpressions.Variable.Match(arg) is { Success: true } m) {
-        //        Assert.True(expectedMatch);
-        //        Assert.Equal(expectedValue, m.Value);
-        //    }
-        //    else Assert.False(expectedMatch);
-        //}
+        [Theory]
+        [InlineData("complex(A)", true, "complex", "(A)")]
+        [InlineData("complex(   A   )", true, "complex", "(   A   )")]
+        [InlineData("complex(A, B , C )", true, "complex", "(A, B , C )")]
+        [InlineData("complex(nested(term, Var, 302))", true, "complex", "(nested(term, Var, 302))")]
+        public void RegexMatchesAllComplexTypes(string arg, bool expectedMatch, string expectedFunctor, string expectedArguments)
+        {
+            if (RegularExpressions.Complex.Match(arg) is { Success: true, Groups: var groups }) {
+                Assert.True(groups["functor"].Success);
+                Assert.True(groups["arguments"].Success);
+                Assert.Equal(expectedFunctor, groups["functor"].Value);
+                Assert.Equal(expectedArguments, groups["arguments"].Value);
+            }
+            else Assert.False(expectedMatch);
+        }
+
+        [Theory]
+        [InlineData("complex(       )", "complex()")]
+        [InlineData("complex( A, B )", "complex(A, B)")]
+        [InlineData("complex( A, nested(C) )", "complex(A, nested(C))")]
+        [InlineData("complex( A, b(C, d( E , F  )) )", "complex(A, b(C, d(E, F)))")]
+        [InlineData("complex( A, b(C, d( E , nested(F, 43)  )) )", "complex(A, b(C, d(E, nested(F, 43))))")]
+        public void ParserBuildsAllComplexTypes(string input, string canonical)
+        {
+            var a = ErgolParser.TryParseComplex(input).ValueOrThrow("Parser fail!");
+            Assert.Equal(canonical, a.CanonicalRepresentation());
+        }
     }
 }

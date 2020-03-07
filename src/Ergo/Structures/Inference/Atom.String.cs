@@ -1,5 +1,8 @@
-﻿using Ergo.Structures.Monads;
+﻿using Ergo.Exceptions;
+using Ergo.Parser;
+using Ergo.Structures.Monads;
 using System;
+using System.Text.RegularExpressions;
 
 namespace Ergo.Structures.Inference
 {
@@ -7,16 +10,36 @@ namespace Ergo.Structures.Inference
     {
         public partial class String : Atom
         {
-            public String(string val) : base(val) { }
+            private static readonly Regex Space = new Regex(@"\s", RegularExpressions.DefaultOptions);
+            private static readonly Regex LeftQuote = new Regex(@"^\s*['""]", RegularExpressions.DefaultOptions);
+            private static readonly Regex RightQuote = new Regex(@"['""]\s*$", RegularExpressions.DefaultOptions);
+
+            public static String Make(string val)
+            {
+                if (Space.IsMatch(val)) {
+                    if (!LeftQuote.IsMatch(val) || !RightQuote.IsMatch(val))
+                        throw new ArgumentException("Missing or mismatched quotes for atomic string containing spaces.");
+                    return new String(RightQuote.Replace(LeftQuote.Replace(val, "'"), "'"));
+                }
+                else {
+                    return new String(RightQuote.Replace(LeftQuote.Replace(val, ""), ""));
+                }
+            }
+
+            internal String(string val) : base(val) { }
             public new string Value => (string)base.Value;
 
-            public override Maybe<Atom> UnifiesWith(Atom other)
+            public override Maybe<Atom> UnifyWith(Atom other)
             {
                 return other switch {
-                    Quoted q => q.TrySimplify().Map(s => s.UnifiesWith(this)).ValueOrThrow("Unreachable"),
                     String s when System.String.Equals(Value, s.Value, StringComparison.Ordinal) => Maybe.Some(other),
                     _ => Maybe.None
                 };
+            }
+
+            public override string CanonicalRepresentation()
+            {
+                return Value;
             }
         }
     }

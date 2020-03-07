@@ -16,7 +16,9 @@ namespace Ergo.Parser
         private static readonly string _Decimal = @"[0-9]*\.[0-9]+";
         private static readonly string _Integer = @"[0-9]+";
         private static readonly string _Variable = @"\b[A-Z][A-Za-z_]*\b";
-        private static readonly string _Term = $"({_QuotedString}|{_AtomicString}|{_Decimal}|{_Integer}|{_Variable})";
+        private static readonly string _Term = $@"({_QuotedString}|{_AtomicString}|{_Decimal}|{_Integer}|{_Variable})";
+        private static readonly string _Complex = $@"(?<functor>{_AtomicString})\s*(?<arguments>\(.*?\))\s*$";
+
         public static readonly Regex Variable = new Regex(_Variable, DefaultOptions);
         public static readonly Regex Constant = new Regex($@"
             ( (?<string>{_QuotedString})
@@ -26,8 +28,7 @@ namespace Ergo.Parser
               | (?<integer>{_Integer})
               \b) )
         ", DefaultOptions);
-        public static readonly Regex Complex = new Regex($@"(?<functor>{_AtomicString})\s*(?<arguments>\(\s*({_Term}\s*,?\s*)*\))", DefaultOptions);
-        public static readonly Regex Argument = new Regex($@"\s*\(?(?<arg>{_Term})\s*(,|\))", DefaultOptions);
+        public static readonly Regex Complex = new Regex(_Complex, DefaultOptions);
         public static readonly Regex QuotedString = new Regex(_QuotedString, DefaultOptions);
     }
 }

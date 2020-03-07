@@ -6,9 +6,9 @@ namespace Ergo.Structures.Inference
     {
         public partial class Number : Atom
         {
-            public Number(double val) : base(val) { }
+            internal Number(double val) : base(val) { }
             public new double Value => (double)base.Value;
-            public override Maybe<Atom> UnifiesWith(Atom other)
+            public override Maybe<Atom> UnifyWith(Atom other)
             {
                 return other switch
                 {
@@ -16,6 +16,10 @@ namespace Ergo.Structures.Inference
                     Number n when n.Value == Value => Maybe.Some(other),
                     _ => Maybe.None
                 };
+            }
+            public override string CanonicalRepresentation()
+            {
+                return Value.ToString("#.###");
             }
         }
     }

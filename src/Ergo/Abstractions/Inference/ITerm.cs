@@ -2,5 +2,6 @@
 {
     public interface ITerm : IUnifiable<ITerm>
     {
+        string CanonicalRepresentation();
     }
 }

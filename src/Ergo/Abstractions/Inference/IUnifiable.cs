@@ -4,6 +4,6 @@ namespace Ergo.Abstractions.Inference
 {
     public interface IUnifiable<T>
     {
-        Maybe<T> UnifiesWith(T other);
+        Maybe<T> UnifyWith(T other);
     }
 }

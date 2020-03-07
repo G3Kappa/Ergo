@@ -8,9 +8,9 @@ namespace Ergo.Structures.Inference
         {
             public class Integer : Number
             {
-                public Integer(int val) : base(val) { }
+                internal Integer(int val) : base(val) { }
                 public new int Value => (int)base.Value;
-                public override Maybe<Atom> UnifiesWith(Atom other)
+                public override Maybe<Atom> UnifyWith(Atom other)
                 {
                     return other switch
                     {
@@ -18,6 +18,11 @@ namespace Ergo.Structures.Inference
                         Number n when (int)n.Value == Value => Maybe.Some(other),
                         _ => Maybe.None
                     };
+                }
+
+                public override string CanonicalRepresentation()
+                {
+                    return Value.ToString();
                 }
             }
         }
