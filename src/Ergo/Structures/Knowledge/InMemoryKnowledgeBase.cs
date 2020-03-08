@@ -84,12 +84,13 @@ namespace Ergo.Structures.Knowledge
                         _ = goal.Constrain(clause.Head.Term, vars).ValueOrThrow("Solver fail!");
                         yield return new Solution(goal, vars);
                     }
-
-                    // Try unifying it (the head is already unified)
-                    foreach (var subGoal in subGoals) {
-                        vars = Checkpoint(subGoal);
-                        if (vars.Length == 0) continue;
-
+                    else {
+                        // Try unifying it (the head is already unified)
+                        foreach (var subGoal in subGoals) {
+                            foreach (var s in Solve(subGoal, graph, choicePoints)) {
+                                yield return s;
+                            }
+                        }
                     }
                 }
             }

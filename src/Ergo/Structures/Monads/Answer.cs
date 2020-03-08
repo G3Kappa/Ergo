@@ -16,7 +16,8 @@ namespace Ergo.Structures.Monads
         public Answer(Query query, LinkedList<Solution> graph, Stack<LinkedListNode<Solution>> choicePoints, IEnumerable<Solution> solutions)
         {
             Query = query;
-            Solutions = solutions;
+            Solutions = solutions
+                .Where(s => s.Variables.Length > 0);
             Graph = graph;
             ChoicePoints = choicePoints;
         }

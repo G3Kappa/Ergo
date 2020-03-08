@@ -15,7 +15,9 @@ namespace Ergo.Structures.Inference
         public Solution(Goal g, params TemporaryVariable[] vars)
         {
             Goal = g;
-            Variables = vars;
+            Variables = vars
+                .Where(v => !v.Variable.Name.StartsWith("_"))
+                .ToArray();
         }
 
         public string Canonical()
@@ -24,7 +26,6 @@ namespace Ergo.Structures.Inference
                 return Goal.Term.Canonical();
             }
             return String.Join(", ", Variables
-                .Where(v => !v.Variable.Name.StartsWith("_"))
                 .Select(v => $"{v.Variable.Name} = {v.Instantiation.Canonical()}"));
         }
 
