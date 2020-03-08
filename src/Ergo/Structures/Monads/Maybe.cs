@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ergo.Abstractions.Inference;
+using System;
 // Kindly stolen from: https://github.com/ymassad/MaybeExamples/blob/master/MaybeAsAStruct/Maybe.cs
 namespace Ergo.Structures.Monads
 {

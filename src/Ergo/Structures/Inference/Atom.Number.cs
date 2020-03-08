@@ -17,7 +17,7 @@ namespace Ergo.Structures.Inference
                     _ => Maybe.None
                 };
             }
-            public override string CanonicalRepresentation()
+            public override string Canonical()
             {
                 return Value.ToString("#.###");
             }

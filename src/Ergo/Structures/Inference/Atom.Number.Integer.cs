@@ -20,7 +20,7 @@ namespace Ergo.Structures.Inference
                     };
                 }
 
-                public override string CanonicalRepresentation()
+                public override string Canonical()
                 {
                     return Value.ToString();
                 }

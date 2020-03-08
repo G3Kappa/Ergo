@@ -1,7 +1,8 @@
 ﻿namespace Ergo.Abstractions.Inference
 {
-    public interface ITerm : IUnifiable<ITerm>
+
+    public interface ITerm : IUnifiable<ITerm>, ICanonicalRepresentation
     {
-        string CanonicalRepresentation();
+        bool IsGround();
     }
 }

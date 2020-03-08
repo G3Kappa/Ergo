@@ -11,14 +11,21 @@ namespace Ergo.Structures.Inference
         public partial class String : Atom
         {
             private static readonly Regex Space = new Regex(@"\s", RegularExpressions.DefaultOptions);
+            private static readonly Regex Uppercase = new Regex(@"[A-Z]", RegularExpressions.DefaultOptions);
             private static readonly Regex LeftQuote = new Regex(@"^\s*['""]", RegularExpressions.DefaultOptions);
             private static readonly Regex RightQuote = new Regex(@"['""]\s*$", RegularExpressions.DefaultOptions);
 
             public static String Make(string val)
             {
-                if (Space.IsMatch(val)) {
-                    if (!LeftQuote.IsMatch(val) || !RightQuote.IsMatch(val))
-                        throw new ArgumentException("Missing or mismatched quotes for atomic string containing spaces.");
+                var space = Space.IsMatch(val);
+                var upper = Uppercase.IsMatch(val);
+                if (space || upper) {
+                    if (!LeftQuote.IsMatch(val) || !RightQuote.IsMatch(val)) {
+                        if (space) {
+                            throw new ArgumentException("Missing or mismatched quotes for atomic string containing spaces.");
+                        }
+                        return new String($"'{RightQuote.Replace(LeftQuote.Replace(val, ""), "")}'");
+                    }
                     return new String(RightQuote.Replace(LeftQuote.Replace(val, "'"), "'"));
                 }
                 else {
@@ -37,7 +44,7 @@ namespace Ergo.Structures.Inference
                 };
             }
 
-            public override string CanonicalRepresentation()
+            public override string Canonical()
             {
                 return Value;
             }

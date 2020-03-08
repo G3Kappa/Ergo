@@ -17,9 +17,9 @@ namespace Tests
         [InlineData("hello", "'hello'", "'hello world'")]
         public void ConstantShouldUnifyWithEqualConstants(string _a, string _b, string _c)
         {
-            ITerm a = ErgolParser.TryParseConstant(_a).ValueOrThrow(nameof(_a));
-            ITerm b = ErgolParser.TryParseConstant(_b).ValueOrThrow(nameof(_b));
-            ITerm c = ErgolParser.TryParseConstant(_c).ValueOrThrow(nameof(_c));
+            ITerm a = ErgolParser.Parse(_a, ErgolParser.TryParseConstant);
+            ITerm b = ErgolParser.Parse(_b, ErgolParser.TryParseConstant);
+            ITerm c = ErgolParser.Parse(_c, ErgolParser.TryParseConstant);
 
             Assert.True(a.UnifyWith(a).TryGetValue(out _));
             Assert.True(b.UnifyWith(b).TryGetValue(out _));
@@ -45,9 +45,9 @@ namespace Tests
         [InlineData("A", "'Lorem Ipsum'")]
         public void VariablesShouldUnifyWithAnything(string variableName, string constantName)
         {
-            ITerm variable = ErgolParser.TryParseVariable(variableName).ValueOrThrow("Parser fail!");
-            ITerm otherVariable = ErgolParser.TryParseVariable("Other").ValueOrThrow("Parser fail!");
-            ITerm constant = ErgolParser.TryParseConstant(constantName).ValueOrThrow("Parser fail!");
+            ITerm variable = ErgolParser.Parse(variableName, ErgolParser.TryParseVariable);
+            ITerm otherVariable = ErgolParser.Parse("Other", ErgolParser.TryParseVariable);
+            ITerm constant = ErgolParser.Parse(constantName, ErgolParser.TryParseConstant);
 
             Assert.True(variable.UnifyWith(variable).TryGetValue(out _));
             Assert.True(otherVariable.UnifyWith(otherVariable).TryGetValue(out _));
@@ -70,13 +70,20 @@ namespace Tests
         [InlineData("functor(nested(A, nested(B)))", "functor(nested(arg1, nested(arg2)))", true, false)]
         [InlineData("Invalid(nested(A, nested(B)))", "functor(nested(arg1, Invalid(arg2)))", false, false)]
         [InlineData("valid(nested(A, nested(B)))", "functor(nested(arg1, valid(arg2)))", false, false)]
-        [InlineData("valid(nested(A, valid(B)))", "functor(nested(arg1, valid(arg2)))", false, false)]
+        [InlineData("valid(nested(A, N))", "valid(nested(1, nested(2)))", true, false)]
+        [InlineData("valid(nested(A, N))", "valid(nested(1, nested(nested(nested(2)))))", true, false)]
         public void ComplexTermsShouldUnifyWithEqualComplexTerms(string str, string cmp, bool expectedLR, bool expectedRL)
         {
-            ITerm left  = ErgolParser.TryParseComplex(str).ValueOrThrow("Parser fail!");
-            ITerm right = ErgolParser.TryParseComplex(cmp).ValueOrThrow("Parser fail!");
+            ITerm left = ErgolParser.Parse(str, ErgolParser.TryParseComplex);
+            ITerm right = ErgolParser.Parse(cmp, ErgolParser.TryParseComplex);
             Assert.Equal(expectedLR, left.UnifyWith(right).TryGetValue(out _));
             Assert.Equal(expectedRL, right.UnifyWith(left).TryGetValue(out _));
+        }
+
+        [Fact]
+        public void GoalsShouldBeConstrainedByVariables()
+        {
+
         }
     }
 }

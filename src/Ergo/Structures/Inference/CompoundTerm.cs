@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Ergo.Structures.Inference
 {
-    [DebuggerDisplay("{CanonicalRepresentation()}")]
+    [DebuggerDisplay("{Canonical()}")]
     public readonly struct CompoundTerm : ITerm
     {
         public readonly Atom Functor;
@@ -43,9 +43,7 @@ namespace Ergo.Structures.Inference
             }
         }
 
-        public string CanonicalRepresentation()
-        {
-            return $"{Functor.CanonicalRepresentation()}({String.Join(", ", Arguments.Select(a => a.CanonicalRepresentation()))})";
-        }
+        public string Canonical() => $"{Functor.Canonical()}({String.Join(", ", Arguments.Select(a => a.Canonical()))})";
+        public bool IsGround() => Arguments.All(arg => arg.IsGround());
     }
 }

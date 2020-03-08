@@ -6,27 +6,26 @@ using System.Linq;
 namespace Ergo.Structures.Inference
 {
 
-    [DebuggerDisplay("{CanonicalRepresentation()}")]
+    [DebuggerDisplay("{Canonical()}")]
     public readonly struct AtomicTerm : ITerm
     {
-        public readonly Atom Value;
+        public readonly Atom Atom;
 
         public AtomicTerm(Atom value)
         {
-            Value = value;
+            Atom = value;
         }
 
         Maybe<ITerm> IUnifiable<ITerm>.UnifyWith(ITerm other)
         {
             return other switch {
-                AtomicTerm k => Value.UnifyWith(k.Value).Map(_ => other),
+                AtomicTerm k => Atom.UnifyWith(k.Atom).Map(_ => other),
                 _ => Maybe.None
             };
         }
         
-        public string CanonicalRepresentation()
-        {
-            return Value.CanonicalRepresentation();
-        }
+        public string Canonical() =>  Atom.Canonical();
+        public bool IsGround() => true;
+        public int Arity() => 0;
     }
 }

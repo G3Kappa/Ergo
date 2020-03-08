@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Ergo.Structures.Inference
 {
-    [DebuggerDisplay("{CanonicalRepresentation()}")]
+    [DebuggerDisplay("{Canonical()}")]
     public abstract partial class Atom : IUnifiable<Atom>
     {
         public virtual object Value { get; protected set; }
@@ -20,6 +20,6 @@ namespace Ergo.Structures.Inference
         public static implicit operator Atom(short n) => new Number.Integer(n);
         public static implicit operator Atom(byte n) => new Number.Integer(n);
         public abstract Maybe<Atom> UnifyWith(Atom other);
-        public abstract string CanonicalRepresentation();
+        public abstract string Canonical();
     }
 }
