@@ -10,9 +10,12 @@ namespace Demo
         static void Main(string[] args)
         {
             var kb = new InMemoryKnowledgeBase();
-            kb.AssertLast(ErgolParser.Parse("loves(john, jane).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("loves(jack, jane).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("jealous(A, B) :-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(bowser, loves, peach).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(mario, loves, peach).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(luigi, loves, daisy).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(waluigi, loves, daisy).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(wario, loves, wario).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(A, jealous, B) :-\n\tfact(A, loves, C),\n\tfact(B, loves, C).", ErgolParser.TryParseClause));
             Console.Write("?- ");
             while (Console.ReadLine() is { } line && line != "q") {
                 if (ErgolParser.TryParseQuery(line).TryGetValue(out var query)) {

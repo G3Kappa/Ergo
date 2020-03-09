@@ -25,7 +25,6 @@ namespace Ergo.Structures.Monads
         public IEnumerator<Solution> GetEnumerator()
         {
             if(!Result.TryGetValue(out _)) {
-                Solutions = Solutions.ToList();
                 if(!Solutions.Any()) {
                     Result = Maybe.Some(Graph.Count > 0);
                 }

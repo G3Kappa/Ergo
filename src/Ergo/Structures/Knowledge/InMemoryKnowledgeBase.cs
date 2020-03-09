@@ -1,13 +1,9 @@
-﻿using Ergo.Abstractions.Inference;
-using Ergo.Abstractions.Knowledge;
+﻿using Ergo.Abstractions.Knowledge;
 using Ergo.Extensions.Inference;
 using Ergo.Structures.Inference;
 using Ergo.Structures.Monads;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 
 namespace Ergo.Structures.Knowledge
 {
@@ -71,25 +67,30 @@ namespace Ergo.Structures.Knowledge
                     }
                     // Otherwise, backtrack.
                     foreach (var s in Backtrack()) { yield return s; }
-                    continue;
                 }
-                // Keep track of all variables for the current goal
-                var vars = Checkpoint(goal);
-                // If this goal has no free variables, go on to the next one since we know it matched
-                if(vars.Length == 0) continue;
                 // Otherwise, for each matched clause (in the order they were matched):
                 foreach (var (clause, subGoals) in clauses.ToDictionary(c => c, c => c.Body.Goals)) {
+                    // Keep track of all variables for the current goal
+                    var vars = Checkpoint(goal);
                     // If the clause is a fact, it means that all variables were unified and this is a solution to our goal.
-                    if(clause.Factual) {
-                        _ = goal.Constrain(clause.Head.Term, vars).ValueOrThrow("Solver fail!");
-                        yield return new Solution(goal, vars);
+                    if (goal.Constrain(clause.Head.Term, vars).TryGetValue(out var g) && vars.All(v => v.Instantiation.IsGround())) {
+                        yield return new Solution(g, vars);
                     }
                     else {
-                        // Try unifying it (the head is already unified)
-                        foreach (var subGoal in subGoals) {
-                            foreach (var s in Solve(subGoal, graph, choicePoints)) {
-                                yield return s;
+                        // Solve this clause's body as if it were a query of its own
+                        foreach (var ans in Solve(subGoals, graph, choicePoints)) {
+                            if (((Goal)clause.Head).Constrain(clause.Head.Term, ans.Variables).TryGetValue(out var gg)) {
+                                // Substitute variables with their answers
+                                var dict = ans.Variables.ToDictionary(a => a.Variable.Name);
+                                for (int i = 0; i < vars.Length; i++) {
+                                    if(vars[i].Instantiation is Variable v && dict.TryGetValue(v.Name, out var w)) {
+                                        vars[i] = new Solution.TemporaryVariable(vars[i].Variable, i, w.Instantiation);
+                                    }
+                                }
                             }
+                        }
+                        if (goal.Constrain(clause.Head.Term, vars).TryGetValue(out var ggg)) {
+                            yield return new Solution(ggg, vars);
                         }
                     }
                 }
@@ -107,13 +108,13 @@ namespace Ergo.Structures.Knowledge
                 var vars = goal.TemporaryVariables();
                 if(choicePoints.Count > 0) {
                     var node = graph.AddAfter(choicePoints.Peek(), new Solution(goal, vars));
-                    if(vars.Length > 0) {
+                    if(node.Value.Variables.Length > 0) {
                         choicePoints.Push(node);
                     }
                 }
                 else {
                     var node = graph.AddFirst(new Solution(goal, vars));
-                    if(vars.Length > 0) {
+                    if(node.Value.Variables.Length > 0) {
                         choicePoints.Push(node);
                     }
                 }

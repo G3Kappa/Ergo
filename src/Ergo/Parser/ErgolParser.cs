@@ -105,11 +105,12 @@ namespace Ergo.Parser
                 return Maybe.None;
             }
 
-            return Maybe.Some<Query>(goals.Select(g => g.ValueOrThrow("Unreachable")).ToArray());
+            var q = (Query)goals.Select(g => g.ValueOrThrow("Unreachable")).ToArray();
+            return Maybe.Some(q);
 
             IEnumerable<Maybe<Goal>> Goals()
             {
-                foreach (var l in query.Split("\n")) {
+                foreach (var l in query.Split(new[] { "\n", "->" }, StringSplitOptions.RemoveEmptyEntries)) {
                     if (RegularExpressions.ClauseBody.Match(l) is { Success: true, Groups: var bg }) {
                         yield return TryParseTerm(bg["body"].Value)
                             .Map(t => Goal.From(t).ValueOrThrow("Unreachable"));
@@ -165,15 +166,15 @@ namespace Ergo.Parser
                     throw new ErgolParserException($"Clause {clause.Canonical()} has singleton variables: {String.Join(", ", singletons)}.");
                 }
             }
+        }
 
-            string[] SingletonVariables(IEnumerable<Variable> vars)
-            {
-                return vars
-                    .GroupBy(v => v.Name)
-                    .Where(g => !g.Key.StartsWith("_") && g.Count() == 1)
-                    .Select(g => g.Key)
-                    .ToArray();
-            }
+        private static string[] SingletonVariables(IEnumerable<Variable> vars)
+        {
+            return vars
+                .GroupBy(v => v.Name)
+                .Where(g => !g.Key.StartsWith("_") && g.Count() == 1)
+                .Select(g => g.Key)
+                .ToArray();
         }
     }
 }

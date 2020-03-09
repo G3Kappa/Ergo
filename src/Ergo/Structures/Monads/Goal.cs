@@ -34,7 +34,10 @@ namespace Ergo.Structures.Monads
             {
                 AtomicTerm a => new[] { new Solution.TemporaryVariable(new Variable("_"), i, a) },
                 Variable v => new[] { new Solution.TemporaryVariable(v, i, v) },
-                CompoundTerm c => c.Arguments
+                CompoundTerm c when i == 1 => c.Arguments
+                    .SelectMany((a, j) => _Temps(a, i * 100 + j))
+                    .ToArray(),
+                CompoundTerm c when i > 1 => c.Arguments
                     .SelectMany((a, j) => _Temps(a, i * 100 + j))
                     .Prepend(new Solution.TemporaryVariable(new Variable("_"), i, c))
                     .ToArray(),
@@ -55,24 +58,40 @@ namespace Ergo.Structures.Monads
                     if (temps.Length != 1)
                         return Maybe.None;
                     temps[0] = new Solution.TemporaryVariable(temps[0].Variable, 0, atom);
+                    return From(t);
                 }
                 else if(t is CompoundTerm comp) {
                     var args = _Temps(comp);
                     if (comp.Variables().Length > temps.Length)
                         return Maybe.None;
+                    var assignedVars = new Dictionary<string, Solution.TemporaryVariable>();
                     for (int i = 0; i < args.Length; i++) {
                         // find tmp var with same runtime name
                         for (int j = 0; j < temps.Length; j++) {
                             if (!temps[j].RuntimeName.Equals(args[i].RuntimeName))
                                 continue;
-                            temps[j] = temps[j].UnifyWith(args[i].Instantiation).ValueOrThrow("Constraint fail!");
-                            break;
+                            if(assignedVars.TryGetValue(temps[j].Variable.Name, out var assigned)) {
+                                if(assigned.UnifyWith(args[i].Instantiation).TryGetValue(out _)) {
+                                    temps[j] = assigned;
+                                    break;
+                                }
+                                return Maybe.None;
+                            }
+
+                            if (temps[j].UnifyWith(args[i].Instantiation).TryGetValue(out var unified)) {
+                                temps[j] = unified;
+                                assignedVars[temps[j].Variable.Name] = temps[j];
+                                break;
+                            }
                         }
                     }
+                    var ret = From(new CompoundTerm(comp.Functor, temps.Select(t => assignedVars.TryGetValue(t.Variable.Name, out var val)
+                        ? val.Instantiation
+                        : t.Instantiation).ToArray()));
+                    return ret;
                 }
-                return From(t);
-            }).ValueOrThrow("Solver fail!")
-            .ValueOrThrow("Unification fail!");
+                return Maybe.None;
+            }).ValueOrThrow("Solver fail!");
         }
     }
 }

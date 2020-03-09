@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Ergo.Extensions.Inference;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Ergo.Structures.Monads

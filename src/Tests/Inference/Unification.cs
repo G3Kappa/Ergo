@@ -79,11 +79,5 @@ namespace Tests
             Assert.Equal(expectedLR, left.UnifyWith(right).TryGetValue(out _));
             Assert.Equal(expectedRL, right.UnifyWith(left).TryGetValue(out _));
         }
-
-        [Fact]
-        public void GoalsShouldBeConstrainedByVariables()
-        {
-
-        }
     }
 }

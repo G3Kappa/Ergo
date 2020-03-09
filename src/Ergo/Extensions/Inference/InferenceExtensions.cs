@@ -21,6 +21,20 @@ namespace Ergo.Extensions.Inference
             };
         }
 
+        public static Solution.TemporaryVariable[] UnifyWith(this Solution.TemporaryVariable[] a, Solution.TemporaryVariable[] b)
+        {
+            var left = a.ToDictionary(a => a.RuntimeName, a => a);
+            var right = new Dictionary<string, Solution.TemporaryVariable>();
+            for (int i = 0; i < b.Length; i++) {
+                if (left.TryGetValue(b[i].RuntimeName, out var t)) {
+                    if(t.Instantiation.UnifyWith(b[i].Instantiation).TryGetValue(out var unified)) {
+                        right[t.RuntimeName] = new Solution.TemporaryVariable(t.Variable, t.RuntimeName, b[i].Instantiation);
+                    }
+                }
+            }
+            return right.Values.ToArray();
+        }
+
         public static Variable[] Variables(this Query query)
         {
             return query.Goals.SelectMany(g => g.Term.Variables()).ToArray();

@@ -42,7 +42,7 @@ namespace Ergo.Structures.Inference
                 RuntimeName = $"__G{i}";
             }
 
-            private TemporaryVariable(Variable v, string n, ITerm inst)
+            internal TemporaryVariable(Variable v, string n, ITerm inst)
             {
                 Variable = v;
                 Instantiation = inst;
