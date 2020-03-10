@@ -10,33 +10,26 @@ namespace Ergo.Structures.Monads
     [DebuggerDisplay("{Canonical()}")]
     public readonly struct Clause : ICanonicalRepresentation
     {
-        public readonly Fact Head;
+        public readonly Goal Head;
         public readonly Query Body;
         public readonly int Arity => (Head.Term is CompoundTerm c ? c.Arity : 0);
         public readonly bool Factual;
 
-        public Clause(Fact head, Query goals)
+        public Clause(Goal head, Query goals)
         {
             Head = head;
             Body = goals;
-            Factual = Body.Goals.Count == 1 && Body.Goals.Single().Term == Fact.True.Term;
-        }
-
-        public Clause(Fact head, params Goal[] goals)
-        {
-            Head = head;
-            if(goals.Length > 0) {
-                Body = goals;
-            }
-            else {
-                Body = (Goal)Fact.True;
-            }
-            Factual = Body.Goals.Count == 1 && Body.Goals.Single().Term == Fact.True.Term;
+            Factual = Body.Goals.Count == 0;
         }
 
         public string Canonical()
         {
             return $"{Head.Term.Canonical()}/{Arity}";
+        }
+
+        public Clause Clone(bool preserveReferences)
+        {
+            return new Clause(Head.Clone(preserveReferences), Body.Clone(preserveReferences));
         }
 
         public override string ToString()
@@ -63,9 +56,9 @@ namespace Ergo.Structures.Monads
             }
         }
 
-        public static implicit operator Clause(Fact f)
+        public static implicit operator Clause(Goal f)
         {
-            return new Clause(f, new Goal[] { Fact.True });
+            return new Clause(f, Array.Empty<Goal>());
         }
     }
 }

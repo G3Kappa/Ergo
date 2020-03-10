@@ -12,6 +12,7 @@ namespace Ergo.Structures.Monads
     public sealed class Goal
     {
         public readonly ITerm Term;
+        public bool Satisfied => Term.IsGround();
 
         internal Goal(ITerm term)
         {
@@ -23,75 +24,16 @@ namespace Ergo.Structures.Monads
 
         public static Maybe<Goal> From(ITerm value) => Fact.From(value).Map(f => (Goal)f);
 
-        public Solution.TemporaryVariable[] TemporaryVariables()
+        public Goal Clone(bool preserveReferences)
         {
-            return _Temps(Term);
-        }
-
-        private Solution.TemporaryVariable[] _Temps(ICanonicalRepresentation t, int i = 1)
-        {
-            return t switch
-            {
-                AtomicTerm a => new[] { new Solution.TemporaryVariable(new Variable("_"), i, a) },
-                Variable v => new[] { new Solution.TemporaryVariable(v, i, v) },
-                CompoundTerm c when i == 1 => c.Arguments
-                    .SelectMany((a, j) => _Temps(a, i * 100 + j))
-                    .ToArray(),
-                CompoundTerm c when i > 1 => c.Arguments
-                    .SelectMany((a, j) => _Temps(a, i * 100 + j))
-                    .Prepend(new Solution.TemporaryVariable(new Variable("_"), i, c))
-                    .ToArray(),
-                Clause k => _Temps(k.Head.Term, i)
-                    .Union(k.Body.Goals
-                        .SelectMany((g, j) => _Temps(g.Term, i * 100 + j)))
-                    .ToArray(),
-                _ => Array.Empty<Solution.TemporaryVariable>()
-            };
-        }
-
-        public Maybe<Goal> Constrain(ITerm k, params Solution.TemporaryVariable[] temps)
-        {
-            if (Term.IsGround())
-                return Maybe.Some(this);
-            return Term.UnifyWith(k).Map(t => {
-                if(t is AtomicTerm atom) {
-                    if (temps.Length != 1)
-                        return Maybe.None;
-                    temps[0] = new Solution.TemporaryVariable(temps[0].Variable, 0, atom);
-                    return From(t);
-                }
-                else if(t is CompoundTerm comp) {
-                    var args = _Temps(comp);
-                    if (comp.Variables().Length > temps.Length)
-                        return Maybe.None;
-                    var assignedVars = new Dictionary<string, Solution.TemporaryVariable>();
-                    for (int i = 0; i < args.Length; i++) {
-                        // find tmp var with same runtime name
-                        for (int j = 0; j < temps.Length; j++) {
-                            if (!temps[j].RuntimeName.Equals(args[i].RuntimeName))
-                                continue;
-                            if(assignedVars.TryGetValue(temps[j].Variable.Name, out var assigned)) {
-                                if(assigned.UnifyWith(args[i].Instantiation).TryGetValue(out _)) {
-                                    temps[j] = assigned;
-                                    break;
-                                }
-                                return Maybe.None;
-                            }
-
-                            if (temps[j].UnifyWith(args[i].Instantiation).TryGetValue(out var unified)) {
-                                temps[j] = unified;
-                                assignedVars[temps[j].Variable.Name] = temps[j];
-                                break;
-                            }
-                        }
-                    }
-                    var ret = From(new CompoundTerm(comp.Functor, temps.Select(t => assignedVars.TryGetValue(t.Variable.Name, out var val)
-                        ? val.Instantiation
-                        : t.Instantiation).ToArray()));
-                    return ret;
-                }
-                return Maybe.None;
-            }).ValueOrThrow("Solver fail!");
+            var map = Term.Variables()
+                .ToLookup(v => v.Name, v => !preserveReferences
+                    ? new Variable(v.Name, Maybe.None)
+                    : v);
+            return From(Term.ReplaceArguments((i, arg) => arg switch {
+                Variable v => map[v.Name].First(),
+                _ => arg
+            })).ValueOrThrow("Unreachable");
         }
     }
 }

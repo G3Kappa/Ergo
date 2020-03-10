@@ -26,6 +26,5 @@ namespace Ergo.Structures.Inference
         
         public string Canonical() =>  Atom.Canonical();
         public bool IsGround() => true;
-        public int Arity() => 0;
     }
 }

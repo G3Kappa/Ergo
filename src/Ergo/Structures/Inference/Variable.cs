@@ -1,37 +1,77 @@
 ﻿using Ergo.Abstractions.Inference;
+using Ergo.Exceptions;
 using Ergo.Structures.Monads;
 using System;
 using System.Diagnostics;
 
 namespace Ergo.Structures.Inference
 {
-    [DebuggerDisplay("{Canonical()}")]
-    public readonly struct Variable : ITerm
+    [DebuggerDisplay("{DebugView()}")]
+    public class Variable : ITerm
     {
-        public readonly string Name { get; }
+        private static int _GID = -1;
+        public static int GlobalId() => _GID = ++_GID % 100;
 
-        public Variable(string name)
+        public string Name { get; }
+        public Maybe<ITerm> Reference { get; set; }
+        public bool Instantiated => Reference.TryGetValue(out _);
+        public ITerm Value {
+            get {
+                if (!Reference.TryGetValue(out var @ref))
+                    return this;
+                if (@ref is Variable v)
+                    return v.Value;
+                return @ref;
+            }
+        }
+
+        public Variable(string name, Maybe<ITerm> instance = default)
         {
             // _    = anonymous discard
             // _Var = ignored singleton
             if (name == "_") {
-                Name = $"__S{Guid.NewGuid().GetHashCode()}";
+                Name = $"_G{GlobalId():00}";
             }
             else {
                 Name = name;
             }
+            Reference = instance;
         }
 
-        Maybe<ITerm> IUnifiable<ITerm>.UnifyWith(ITerm other)
+        public Maybe<ITerm> UnifyWith(ITerm other)
         {
+            if (other == this)
+                return this;
+
             return other switch {
-                AtomicTerm _ => Maybe.Some(other),
-                Variable _ => Maybe.Some(other),
-                CompoundTerm  _ => Maybe.Some(other),
-                _ => Maybe.None
+                Variable v when v.Instantiated => Update(this, v.Value),
+                _ => Update(this, other) 
             };
+
+            static Maybe<ITerm> Update(Variable a, ITerm bi)
+            {
+                if(a.Reference.TryGetValue(out var ai)) {
+                    if (ai.UnifyWith(bi).TryGetValue(out var u)) {
+                        a.Reference = Maybe.Some(u);
+                        return a;
+                    }
+                    else return Maybe.None;
+                }
+                a.Reference = new Variable("_", Maybe.Some(bi));
+                return a;
+            }
         }
-        public string Canonical() => Name;
-        public bool IsGround() => false;
+        public string Canonical()
+        {
+            if(Reference.TryGetValue(out _)) {
+                return $"{Name} = {Value.Canonical()}";
+            }
+            return Name;
+        }
+        public bool IsGround() => Reference.TryGetValue(out var t) && t.IsGround();
+        internal string DebugView()
+        {
+            return $"{Canonical()} ({GetHashCode()})";
+        }
     }
 }

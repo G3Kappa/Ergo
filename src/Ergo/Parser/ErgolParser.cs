@@ -106,7 +106,7 @@ namespace Ergo.Parser
             }
 
             var q = (Query)goals.Select(g => g.ValueOrThrow("Unreachable")).ToArray();
-            return Maybe.Some(q);
+            return Maybe.Some(q.Clone(false));
 
             IEnumerable<Maybe<Goal>> Goals()
             {
@@ -124,7 +124,7 @@ namespace Ergo.Parser
 
         public static Maybe<Clause> TryParseClause(string clause)
         {
-            var lines = clause.Split("\n");
+            var lines = clause.Split(new[] { "\n", "->" }, StringSplitOptions.RemoveEmptyEntries);
             var strHead = lines.First();
             if (RegularExpressions.ClauseHead.Match(strHead) is { Success: true, Groups: var hg }) {
                 var head = TryParseTerm(hg["head"].Value)
@@ -135,7 +135,7 @@ namespace Ergo.Parser
                     case "." when (lines.Length > 1):
                             throw new ErgolParserException("Clause was terminated before the end of its statement list.");
                     case ".":
-                        var fact = new Clause(head);
+                        var fact = new Clause(head, Array.Empty<Goal>());
                         ThrowIfClauseHasSingletons(fact);
                         return Maybe.Some(fact);
                 }

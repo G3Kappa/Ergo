@@ -19,19 +19,19 @@ namespace Demo
             Console.Write("?- ");
             while (Console.ReadLine() is { } line && line != "q") {
                 if (ErgolParser.TryParseQuery(line).TryGetValue(out var query)) {
-                    var ans = kb.Solve(query);
-                    var slv = ans.ToList();
-                    if (ans.Result.ValueOrThrow("Unreachable")) {
-                        if (slv.Count == 0) {
-                            Console.WriteLine("Yes.");
-                            goto input;
-                        }
-                        foreach (var solution in slv) {
-                            Console.Write("\t");
-                            Console.Write(solution.Canonical());
-                            Console.WriteLine(" ;");
-                        }
-                    }
+                    //var ans = kb.Solve(query);
+                    //var slv = ans.ToList();
+                    //if (ans.Result.ValueOrThrow("Unreachable")) {
+                    //    if (slv.Count == 0) {
+                    //        Console.WriteLine("Yes.");
+                    //        goto input;
+                    //    }
+                    //    foreach (var solution in slv) {
+                    //        Console.Write("\t");
+                    //        Console.Write(solution.Canonical());
+                    //        Console.WriteLine(" ;");
+                    //    }
+                    //}
                     Console.WriteLine("No.");
                 }
                 else {

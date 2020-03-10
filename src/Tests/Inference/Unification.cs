@@ -45,8 +45,8 @@ namespace Tests
         [InlineData("A", "'Lorem Ipsum'")]
         public void VariablesShouldUnifyWithAnything(string variableName, string constantName)
         {
-            ITerm variable = ErgolParser.Parse(variableName, ErgolParser.TryParseVariable);
-            ITerm otherVariable = ErgolParser.Parse("Other", ErgolParser.TryParseVariable);
+            var variable = ErgolParser.Parse(variableName, ErgolParser.TryParseVariable);
+            var otherVariable = ErgolParser.Parse("Other", ErgolParser.TryParseVariable);
             ITerm constant = ErgolParser.Parse(constantName, ErgolParser.TryParseConstant);
 
             Assert.True(variable.UnifyWith(variable).TryGetValue(out _));

@@ -33,13 +33,16 @@ namespace Ergo.Structures.Inference
             {
                 if (a.Arity != b.Arity)
                     return Maybe.None;
-                if (!a.Functor.UnifyWith(b.Functor).TryGetValue(out _))
+                if (!a.Functor.UnifyWith(b.Functor).TryGetValue(out var functor))
                     return Maybe.None;
+                var args = new ITerm[a.Arity];
                 for (int i = 0; i < a.Arity; i++) {
-                    if(!a.Arguments[i].UnifyWith(b.Arguments[i]).TryGetValue(out _))
-                        return Maybe.None;
+                    if(a.Arguments[i].UnifyWith(b.Arguments[i]).TryGetValue(out var arg)) {
+                        args[i] = arg;
+                    }
+                    else return Maybe.None;
                 }
-                return Maybe.Some((ITerm)b);
+                return Maybe.Some<ITerm>(new CompoundTerm(functor, args));
             }
         }
 

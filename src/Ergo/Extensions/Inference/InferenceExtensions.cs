@@ -21,18 +21,25 @@ namespace Ergo.Extensions.Inference
             };
         }
 
-        public static Solution.TemporaryVariable[] UnifyWith(this Solution.TemporaryVariable[] a, Solution.TemporaryVariable[] b)
+        public static ITerm[] Arguments(this ITerm t)
         {
-            var left = a.ToDictionary(a => a.RuntimeName, a => a);
-            var right = new Dictionary<string, Solution.TemporaryVariable>();
-            for (int i = 0; i < b.Length; i++) {
-                if (left.TryGetValue(b[i].RuntimeName, out var t)) {
-                    if(t.Instantiation.UnifyWith(b[i].Instantiation).TryGetValue(out var unified)) {
-                        right[t.RuntimeName] = new Solution.TemporaryVariable(t.Variable, t.RuntimeName, b[i].Instantiation);
-                    }
+            return t switch
+            {
+                CompoundTerm c => c.Arguments,
+                _ => Array.Empty<ITerm>()
+            };
+        }
+
+        public static ITerm ReplaceArguments(this ITerm t, Func<int, ITerm, ITerm> replace)
+        {
+            if(t is CompoundTerm c) {
+                var args = new ITerm[c.Arguments.Length];
+                for (int i = 0; i < c.Arguments.Length; i++) {
+                    args[i] = replace(i, c.Arguments[i]).ReplaceArguments(replace);
                 }
+                return new CompoundTerm(c.Functor, args);
             }
-            return right.Values.ToArray();
+            return t;
         }
 
         public static Variable[] Variables(this Query query)
