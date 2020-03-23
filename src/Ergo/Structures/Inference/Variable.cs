@@ -14,7 +14,16 @@ namespace Ergo.Structures.Inference
 
         public string Name { get; }
         public Maybe<ITerm> Reference { get; set; }
-        public bool Instantiated => Reference.TryGetValue(out _);
+        public bool Instantiated {
+            get {
+                if (Reference.TryGetValue(out var t)) {
+                    if (t is Variable v)
+                        return v != this && v.Instantiated;
+                    return true;
+                }
+                return false;
+            }
+        }
         public ITerm Value {
             get {
                 if (!Reference.TryGetValue(out var @ref))
@@ -44,21 +53,21 @@ namespace Ergo.Structures.Inference
                 return this;
 
             return other switch {
-                Variable v when v.Instantiated => Update(this, v.Value),
+                Variable v when !v.Instantiated => Update(v, Value),
                 _ => Update(this, other) 
             };
 
             static Maybe<ITerm> Update(Variable a, ITerm bi)
             {
-                if(a.Reference.TryGetValue(out var ai)) {
-                    if (ai.UnifyWith(bi).TryGetValue(out var u)) {
-                        a.Reference = Maybe.Some(u);
-                        return a;
+                if(a.Instantiated) {
+                    if (a.Value.UnifyWith(bi).TryGetValue(out var u)) {
+                        return new Variable(a.Name, Maybe.Some(u));
                     }
                     else return Maybe.None;
                 }
-                a.Reference = new Variable("_", Maybe.Some(bi));
-                return a;
+                if(bi is Variable)
+                    return Maybe.Some(bi);
+                return new Variable(a.Name, Maybe.Some(bi));
             }
         }
         public string Canonical()

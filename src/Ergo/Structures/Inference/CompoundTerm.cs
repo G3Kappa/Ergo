@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Ergo.Structures.Inference
 {
-    [DebuggerDisplay("{Canonical()}")]
+    //[DebuggerDisplay("{Canonical()}")]
     public readonly struct CompoundTerm : ITerm
     {
         public readonly Atom Functor;

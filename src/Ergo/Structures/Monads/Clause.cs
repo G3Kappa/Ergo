@@ -27,11 +27,6 @@ namespace Ergo.Structures.Monads
             return $"{Head.Term.Canonical()}/{Arity}";
         }
 
-        public Clause Clone(bool preserveReferences)
-        {
-            return new Clause(Head.Clone(preserveReferences), Body.Clone(preserveReferences));
-        }
-
         public override string ToString()
         {
             var head = Head; var body = Body;

@@ -10,6 +10,33 @@ using System.Threading;
 
 namespace Ergo.Structures.Knowledge
 {
+    public class SolutionGraph
+    {
+        public readonly Node Root;
+        public SolutionGraph(Node root)
+        {
+            Root = root;
+        }
+
+        public class Node
+        {
+            public readonly Node Parent;
+            public readonly Query Value;
+            public readonly List<Node> Children;
+
+            public Node(Query query, Node parent = null)
+            {
+                Parent = parent;
+                Value = query;
+                Children = new List<Node>();
+            }
+            public override string ToString()
+            {
+                return Value.ToString();
+            }
+        }
+    }
+
     public class InMemoryKnowledgeBase : IKnowledgeBase
     {
         private readonly IList<Clause> _kb;
@@ -33,16 +60,10 @@ namespace Ergo.Structures.Knowledge
 
         internal IEnumerable<Clause> UnifyClauses(Goal g)
         {
-            return MaybeUnify()
-                .Where(m => m.TryGetValue(out _))
-                .Select(m => m.ValueOrThrow("Unreachable"));
-
-            IEnumerable<Maybe<Clause>> MaybeUnify()
-            {
-                foreach (var clause in Data) {
-                    yield return g.Clone(false).Term
-                        .UnifyWith(clause.Head.Term)
-                        .Map(c => ReplaceVariables(clause, Fact.From(c).ValueOrThrow("Unreachable")));
+            // Replace all arguments of g with variables
+            foreach (var clause in Data) {
+                if (g.Term.UnifyWith(clause.Head.Term).TryGetValue(out var u)) {
+                    yield return ReplaceVariables(clause, Fact.From(u).ValueOrThrow(""));
                 }
             }
         }
@@ -60,7 +81,7 @@ namespace Ergo.Structures.Knowledge
             var newGoals = left.Body.Goals
                 .Select(g => g.Term.ReplaceArguments((i, a) => a switch {
                     Variable v when !v.Instantiated && map.TryGetValue(v.Name, out var val) => val,
-                    Variable v when v.Instantiated => v.Value,
+                    Variable v => v.Value,
                     _ => a
                 }))
                 .Select(t => Goal.From(t).ValueOrThrow("Solver fail!"))
@@ -68,31 +89,51 @@ namespace Ergo.Structures.Knowledge
             return new Clause(newHead, newGoals);
         }
 
-        public Maybe<List<Clause>> SolveGoal(Goal goal)
+        private SolutionGraph.Node Solve(Query query, SolutionGraph.Node parent)
         {
-            var solutions = new List<Clause>();
-            var matches = UnifyClauses(goal)
+            query = query.Goals
+                .Select(g => g.Term.ReplaceArguments((i, a) => a switch {
+                    Variable v when v.Instantiated => v.Value,
+                    _ => a
+                }))
+                .Select(t => Goal.From(t).ValueOrThrow(""))
                 .ToList();
-            foreach (var clause in matches) {
-                bool failed = false;
-                foreach (var sub in clause.Body.Goals) {
-                    if(SolveGoal(sub).TryGetValue(out _)) {
 
+            var current = new SolutionGraph.Node(query, parent);
+            for (int i = 0; i < query.Goals.Count; ++i) {
+                var goal = query.Goals[i];
+                var matches = UnifyClauses(goal)
+                    .ToList();
+                if (matches.Count == 0) return new SolutionGraph.Node(query, parent);
+                if (matches.Count == 1 && goal.Satisfied) continue;
+
+                bool shouldBreak = false;
+                foreach (var match in matches) {
+                    if (match.Factual) {
+                        var node = new SolutionGraph.Node(match.Head, current);
+                        // replace the variables that were bound by node in a copy of query
+                        // and solve it as a child of current
+                        var subQuery = query.Skip(i + 1).ToList();
+                        var newBody = ReplaceVariables(new Clause(match.Head, subQuery), (Fact)match.Head)
+                            .Body;
+                        if(newBody.Count() > 0) {
+                            node.Children.Add(Solve(newBody, node));
+                        }
+                        current.Children.Add(node);
+                        shouldBreak = true;
                     }
                     else {
-                        failed = true;
-                        break;
+                        current.Children.Add(Solve(match.Body, current));
                     }
                 }
-                if(!failed) {
-                    solutions.Add(clause);
-                }
+                if (shouldBreak) break;
             }
-            /* Backtrack */
-            if(solutions.Any()) {
-                return Maybe.Some(solutions);
-            }
-            return Maybe.None;
+            return current;
+        }
+
+        public SolutionGraph Solve(Query query)
+        {
+            return new SolutionGraph(Solve(query, null));
         }
 
     }

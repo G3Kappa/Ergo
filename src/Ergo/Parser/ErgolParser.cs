@@ -106,7 +106,7 @@ namespace Ergo.Parser
             }
 
             var q = (Query)goals.Select(g => g.ValueOrThrow("Unreachable")).ToArray();
-            return Maybe.Some(q.Clone(false));
+            return Maybe.Some(q);
 
             IEnumerable<Maybe<Goal>> Goals()
             {

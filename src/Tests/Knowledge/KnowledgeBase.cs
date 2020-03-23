@@ -78,14 +78,13 @@ namespace Tests.Knowledge
             //}
 
             var kb = new InMemoryKnowledgeBase();
-            kb.AssertLast(ErgolParser.Parse("f(a).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("f(b).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("g(a).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("g(b).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("h(b).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("k(X) :-\n\tf(X),\n\tg(X),\n\th(X).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("loves(marcellus, mia).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("loves(vincent, mia).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("indirect_loves(A, B) :-\n\tloves(A, B).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("indirect_loves2(F, E) :-\n\tindirect_loves(F, E).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("jealous(A, B):-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
 
-            var res = kb.SolveGoal(Goal.From(ErgolParser.Parse("k(B)", ErgolParser.TryParseTerm)).ValueOrThrow("Unreachable"));
+            var res = kb.Solve(Goal.From(ErgolParser.Parse("jealous(X, Y)", ErgolParser.TryParseTerm)).ValueOrThrow("Unreachable"));
         }
     }
 }
