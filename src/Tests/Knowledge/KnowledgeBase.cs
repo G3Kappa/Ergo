@@ -13,78 +13,50 @@ namespace Tests.Knowledge
 {
     public class KnowledgeBase
     {
-        [Theory]
-        [InlineData("fact", "fact")]
-        [InlineData("fact(_X)", "fact(test)")]
-        [InlineData("fact(_X, _Y)", "fact(test, A)")]
-        [InlineData("fact(_X, _Y, _Z)", "fact(complex(1), test(A), complex(B, 3))")]
-        [InlineData("fact(_X, complex(_Y, _Z))", "fact(test, complex(1, 2))")]
-        [InlineData("fact(_X, complex(_Y, _Z), _X)", "fact(test, complex(1, 2), test)")]
-        public void KnowledgeBaseShouldUnifyAllKnownFacts(string fact, string shouldUnifyWith)
+        [Fact]
+        public void KnowledgeBaseShouldMatchFacts()
         {
-            //var kb = new InMemoryKnowledgeBase();
-            //kb.AssertFirst(ErgolParser.Parse($"{fact}.", ErgolParser.TryParseClause));
-            //var fact_goal = Goal.From(ErgolParser.Parse(fact, ErgolParser.TryParseTerm)).ValueOrThrow("Unreachable");
-            //var fact_clauses = kb.UnifyClauses(fact_goal).ToList();
-            //Assert.Single(fact_clauses);
-            //var unifyWith_goal = Goal.From(ErgolParser.Parse(shouldUnifyWith, ErgolParser.TryParseTerm)).ValueOrThrow("Unreachable");
-            //foreach (var k in fact_clauses) {
-            //    var unified = k.Head.Term.UnifyWith(unifyWith_goal.Term).ValueOrThrow("Unreachable");
-            //    Assert.Equal(shouldUnifyWith, unified.Canonical());
-            //}
+            var kb = new InMemoryKnowledgeBase();
+            kb.AssertLast(ErgolParser.Parse("fact.", ErgolParser.TryParseClause));
+            var res = kb.Solve(ErgolParser.Parse("fact.", ErgolParser.TryParseQuery));
+            var sol = res.Solutions().ToList();
+            Assert.Single(sol);
+            res = kb.Solve(ErgolParser.Parse("not_a_fact.", ErgolParser.TryParseQuery));
+            sol = res.Solutions().ToList();
+            Assert.Empty(sol);
         }
 
-        [Theory]
-        [InlineData("fact.", "fact.", null)]
-        [InlineData("fact(mario, loves, peach).", "fact(X, loves, Y).", "X = mario, Y = peach")]
-        [InlineData("fact(mario, loves, both(peach, coins)).", "fact(X, loves, Y).", "X = mario, Y = both(peach, coins)")]
-        [InlineData("fact(mario, loves, both(peach, coins)).", "fact(X, loves, both(Y, Z)).", "X = mario, Y = peach, Z = coins")]
-        public void KnowledgeBaseShouldSolveAllKnownFacts(string clause, string query, string solution)
+        [Fact]
+        public void VariablesShouldUnifyThroughAssignment()
         {
-            //var kb = new InMemoryKnowledgeBase();
-            //kb.AssertFirst(ErgolParser.Parse(clause, ErgolParser.TryParseClause));
-            //var ans = kb.Solve(ErgolParser.Parse(query, ErgolParser.TryParseQuery));
-            //var slv = ans.ToList();
-            //Assert.True(ans.Result.TryGetValue(out var res) && res);
-            //if (solution != null) {
-            //    Assert.Single(slv);
-            //    Assert.Equal(solution, slv.Single().Canonical());
-            //}
+            var kb = new InMemoryKnowledgeBase();
+            kb.AssertLast(ErgolParser.Parse("fact(one, two).", ErgolParser.TryParseClause));
+            var res = kb.Solve(ErgolParser.Parse("fact(A, B).", ErgolParser.TryParseQuery));
+            var sol = res.Solutions().ToList();
+            Assert.Single(sol);
+            res = kb.Solve(ErgolParser.Parse("fact(A, A).", ErgolParser.TryParseQuery));
+            sol = res.Solutions().ToList();
+            Assert.Empty(sol);
+            kb.AssertLast(ErgolParser.Parse("fact(one, one, two).", ErgolParser.TryParseClause));
+            res = kb.Solve(ErgolParser.Parse("fact(A, A, B).", ErgolParser.TryParseQuery));
+            sol = res.Solutions().ToList();
+            Assert.Single(sol);
         }
 
-        [Theory]
-        [InlineData("fact :-\n\tother_fact1,\n\tother_fact2.", "fact.", null, "other_fact1.", "other_fact2.")]
-        [InlineData("fact(_) :-\n\tother_fact.", "fact(X).", null, "other_fact.")]
-        //[InlineData("fact(_) :-\n\tother_fact(_).", "fact(X).", null, "other_fact(A) :-\n\ttest(A).", "test(_).")]
-        [InlineData("fact(A) :-\n\tother_fact(A).", "fact(A).", "A = mario", "other_fact(mario).")]
-        [InlineData("fact(A) :-\n\ttest(A),\n\ttest_2(A),\n\ttest_3(A).", "fact(A).", "A = mario", "test(mario).", "test_2(mario).", "test_3(mario).")]
-        [InlineData("fact(A) :-\n\ttest(A),\n\ttest_2(A),\n\ttest_3(A).", "fact(X).", "X = mario", "test(mario).", "test_2(mario).", "test_3(mario).")]
-        [InlineData("fact(A) :-\n\tother_fact(A).", "fact(A).", "A = luigi", "other_fact(B) :-\n\tother_other_fact(B).", "other_other_fact(luigi).")]
-        [InlineData("jealous(A, B) :-\n\tloves(A, C),\n\tloves(B, C).", "jealous(A, B).", "A = luigi, B = luigi ; A = luigi, B = waluigi ; A = waluigi, B = waluigi ; A = waluigi, B = luigi", "loves(luigi, daisy).", "loves(waluigi, daisy).")]
-        [InlineData("jealous(A, B, C) :-\n\tloves(A, C),\n\tloves(B, C).", "jealous(A, B, C).", "A = luigi, B = luigi, C = daisy ; A = luigi, B = waluigi ; A = waluigi, B = waluigi ; A = waluigi, B = luigi", "loves(luigi, daisy).", "loves(waluigi, daisy).")]
-        [InlineData("test(A) :-\n\tfact(A).", "test(A).", "A = mario ; A = luigi", "fact(mario).", "fact(luigi).")]
-        public void KnowledgeBaseShouldSolveAllKnownPredicates(string clause, string query, string solution, params string[] assertions)
+        [Fact]
+        public void KnowledgeBaseShouldSolveJealousXY()
         {
-            //var kb = new InMemoryKnowledgeBase();
-            //foreach (var str in assertions) {
-            //    kb.AssertLast(ErgolParser.Parse(str, ErgolParser.TryParseClause));
-            //}
-            //kb.AssertLast(ErgolParser.Parse(clause, ErgolParser.TryParseClause));
-            //var ans = kb.Solve(ErgolParser.Parse(query, ErgolParser.TryParseQuery));
-            //var slv = ans.ToList();
-            //Assert.True(ans.Result.TryGetValue(out var res) && res);
-            //if (solution != null) {
-            //    Assert.Equal(solution, String.Join(" ; ", slv.Select(s => s.Canonical())));
-            //}
-
             var kb = new InMemoryKnowledgeBase();
             kb.AssertLast(ErgolParser.Parse("loves(marcellus, mia).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("loves(vincent, mia).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("indirect_loves(A, B) :-\n\tloves(A, B).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("indirect_loves2(F, E) :-\n\tindirect_loves(F, E).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("jealous(A, B):-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
-
-            var res = kb.Solve(Goal.From(ErgolParser.Parse("jealous(X, Y)", ErgolParser.TryParseTerm)).ValueOrThrow("Unreachable"));
+            var res = kb.Solve(ErgolParser.Parse("jealous(X, Y).", ErgolParser.TryParseQuery));
+            var sol = res.Solutions().ToList();
+            Assert.Equal(4, sol.Count);
+            Assert.Equal("X = marcellus, Y = marcellus", sol[0].Canonical());
+            Assert.Equal("X = marcellus, Y = vincent", sol[1].Canonical());
+            Assert.Equal("X = vincent, Y = marcellus", sol[2].Canonical());
+            Assert.Equal("X = vincent, Y = vincent", sol[3].Canonical());
         }
     }
 }

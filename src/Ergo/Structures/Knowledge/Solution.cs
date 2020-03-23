@@ -1,33 +1,24 @@
 ﻿using Ergo.Abstractions.Inference;
 using Ergo.Structures.Inference;
 using Ergo.Structures.Monads;
+using System;
+using System.Linq;
 
 namespace Ergo.Structures.Knowledge
 {
-    public readonly struct Solution
+    public readonly partial struct Solution : ICanonicalRepresentation
     {
-        public readonly struct Binding : ICanonicalRepresentation
-        {
-            public readonly string VariableName;
-            public readonly ITerm BoundValue;
-
-            public Binding(string var, ITerm t)
-            {
-                VariableName = var;
-                BoundValue = t;
-            }
-
-            public string Canonical()
-            {
-                return $"{VariableName} = {BoundValue.Canonical()}";
-            }
-        }
-
         public readonly Binding[] Bindings;
 
         public Solution(Binding[] b)
         {
             Bindings = b;
+        }
+
+        public string Canonical()
+        {
+            return String.Join(", ", 
+                Bindings.Where(v => !v.VariableName.StartsWith("_")).Select(v => v.Canonical()));
         }
     }
 }

@@ -40,7 +40,7 @@ namespace Demo
 
                     Console.Write("\t   ");
                     foreach (var solution in ans) {
-                        Console.WriteLine(String.Join(", ", solution.Bindings.Where(v => !v.VariableName.StartsWith("_")).Select(v => v.Canonical())));
+                        Console.WriteLine(solution.Canonical());
                         Console.Write("\t ; ");
                         Console.ReadKey(true);
                     }

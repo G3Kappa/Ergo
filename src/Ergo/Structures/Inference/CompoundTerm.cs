@@ -36,13 +36,30 @@ namespace Ergo.Structures.Inference
                 if (!a.Functor.UnifyWith(b.Functor).TryGetValue(out var functor))
                     return Maybe.None;
                 var args = new ITerm[a.Arity];
+                var vars = new Dictionary<string, Variable>();
                 for (int i = 0; i < a.Arity; i++) {
-                    if(a.Arguments[i].UnifyWith(b.Arguments[i]).TryGetValue(out var arg)) {
+                    if(a.Arguments[i] is Variable v) {
+                        if(TryGetOrInitialize(v, out var _v)
+                        && _v.UnifyWith(b.Arguments[i]).TryGetValue(out var argVar)) {
+                            vars[_v.Name] = (Variable)argVar;
+                            args[i] = argVar;
+                        }
+                        else return Maybe.None;
+                    }
+                    else if(a.Arguments[i].UnifyWith(b.Arguments[i]).TryGetValue(out var arg)) {
                         args[i] = arg;
                     }
                     else return Maybe.None;
                 }
                 return Maybe.Some<ITerm>(new CompoundTerm(functor, args));
+
+                bool TryGetOrInitialize(Variable init, out Variable ret)
+                {
+                    if (vars.TryGetValue(init.Name, out ret))
+                        return true;
+                    ret = vars[init.Name] = init;
+                    return true;
+                }
             }
         }
 

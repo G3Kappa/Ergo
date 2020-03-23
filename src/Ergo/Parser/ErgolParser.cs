@@ -74,8 +74,14 @@ namespace Ergo.Parser
                     .Where(m => m.Length > 0);
 
                 if (matches.Count() > 0) {
+                    var vars = new Dictionary<string, Variable>();
                     var arguments = matches
                         .Select(s => TryParseTerm(s).ValueOrThrow($"Unrecognized atom: {s}."))
+                        .Select(t => t switch {
+                            Variable v when vars.TryGetValue(v.Name, out var _v) => _v,
+                            Variable v => vars[v.Name] = v,
+                            _ => t
+                        })
                         .ToArray();
                     return new CompoundTerm(functor, arguments);
                 }
