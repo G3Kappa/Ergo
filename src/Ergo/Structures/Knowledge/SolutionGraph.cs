@@ -28,7 +28,7 @@ namespace Ergo.Structures.Knowledge
                         .GroupBy(v => v.Name).Select(g => g.First())
                         .ToDictionary(v => v.Name, v => (ITerm)v);
                 }
-                else if(variables.All(t => t.Value.IsGround())) {
+                else if(node.Children.Count == 0 && variables.All(t => t.Value.IsGround())) {
                     yield return new Solution(variables.Select(v => new Solution.Binding(v.Key, v.Value)).ToArray());
                 }
 
