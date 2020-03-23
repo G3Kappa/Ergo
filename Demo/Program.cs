@@ -25,15 +25,26 @@ namespace Demo
                     goto input;
                 }
                 else if (ErgolParser.TryParseQuery(line).TryGetValue(out var query)) {
-                    //var ans = kb.Solve(query).ToList();
-                    //if(ans.Count == 0) {
-                    //    Console.WriteLine("No.");
-                    //    goto input;
-                    //}
-                    //foreach (var solution in ans) {
-                    //    Console.Write("\t ; ");
-                    //    Console.WriteLine(solution.Canonical());
-                    //}
+                    var graph = kb.Solve(query);
+                    var ans = graph
+                        .Solutions()
+                        .ToList();
+                    if(ans.Count == 0) {
+                        Console.WriteLine("No.");
+                        goto input;
+                    }
+                    if(ans.Count == 1 && ans.Single().Bindings.Length == 0) {
+                        Console.WriteLine("Yes.");
+                        goto input;
+                    }
+
+                    Console.Write("\t   ");
+                    foreach (var solution in ans) {
+                        Console.WriteLine(String.Join(", ", solution.Bindings.Where(v => !v.VariableName.StartsWith("_")).Select(v => v.Canonical())));
+                        Console.Write("\t ; ");
+                        Console.ReadKey(true);
+                    }
+                    Console.Write("No.\n");
                 }
                 else {
                     Console.WriteLine($"Bad input: {line}.");
