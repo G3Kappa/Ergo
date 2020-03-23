@@ -38,10 +38,10 @@ namespace Ergo.Structures.Inference
                 var args = new ITerm[a.Arity];
                 var vars = new Dictionary<string, Variable>();
                 for (int i = 0; i < a.Arity; i++) {
-                    if(a.Arguments[i] is Variable v) {
+                    if(b.Arguments[i] is Variable v) {
                         if(TryGetOrInitialize(v, out var _v)
-                        && _v.UnifyWith(b.Arguments[i]).TryGetValue(out var argVar)) {
-                            vars[_v.Name] = (Variable)argVar;
+                        && _v.UnifyWith(a.Arguments[i]).TryGetValue(out var argVar)) {
+                            vars[v.Name] = (Variable)argVar;
                             args[i] = argVar;
                         }
                         else return Maybe.None;

@@ -119,7 +119,7 @@ namespace Ergo.Parser
                 foreach (var l in query.Split(new[] { "\n", "->" }, StringSplitOptions.RemoveEmptyEntries)) {
                     if (RegularExpressions.ClauseBody.Match(l) is { Success: true, Groups: var bg }) {
                         yield return TryParseTerm(bg["body"].Value)
-                            .Map(t => Goal.From(t).ValueOrThrow("Unreachable"));
+                            .Map(t => Goal.From(t).TryGetValue(out var v) ? v : throw new ErgolParserException($"Term is not a valid goal: {t.Canonical()}"));
                     }
                     else {
                         yield return Maybe.None;

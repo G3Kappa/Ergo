@@ -18,6 +18,7 @@ namespace Tests.Knowledge
         {
             var kb = new InMemoryKnowledgeBase();
             kb.AssertLast(ErgolParser.Parse("fact.", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("not_a_fact :--> false.", ErgolParser.TryParseClause));
             var res = kb.Solve(ErgolParser.Parse("fact.", ErgolParser.TryParseQuery));
             var sol = res.Solutions().ToList();
             Assert.Single(sol);
@@ -30,7 +31,7 @@ namespace Tests.Knowledge
         public void VariablesShouldUnifyThroughAssignment()
         {
             var kb = new InMemoryKnowledgeBase();
-            kb.AssertLast(ErgolParser.Parse("fact(one, two).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("fact(a, b).", ErgolParser.TryParseClause));
             var res = kb.Solve(ErgolParser.Parse("fact(A, B).", ErgolParser.TryParseQuery));
             var sol = res.Solutions().ToList();
             Assert.Single(sol);

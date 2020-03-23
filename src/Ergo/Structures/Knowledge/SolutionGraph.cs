@@ -1,5 +1,6 @@
 ﻿using Ergo.Abstractions.Inference;
 using Ergo.Extensions.Inference;
+using Ergo.Structures.Inference;
 using System.Collections.Generic;
 using System.Linq;
 

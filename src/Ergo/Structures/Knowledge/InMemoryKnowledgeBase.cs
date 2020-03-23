@@ -37,11 +37,17 @@ namespace Ergo.Structures.Knowledge
 
         internal IEnumerable<Clause> UnifyClauses(Goal g)
         {
+            var any = false;
+            var gFunc = g.Term switch { CompoundTerm c => c.Functor, AtomicTerm a => a.Atom, _ => null };
             foreach (var clause in Data) {
+                var hFunc = clause.Head.Term switch { CompoundTerm c => c.Functor, AtomicTerm a => a.Atom, _ => null };
+                any |= gFunc.UnifyWith(hFunc).TryGetValue(out _);
                 if (g.Term.UnifyWith(clause.Head.Term).TryGetValue(out var u)) {
                     yield return ReplaceVariables(clause, Fact.From(u).ValueOrThrow(""));
                 }
             }
+            if(!any)
+                throw new UndefinedPredicateException(new Clause(g, new List<Goal>()).Canonical());
         }
 
         public static Clause ReplaceVariables(Clause left, Fact newHead)
@@ -89,7 +95,7 @@ namespace Ergo.Structures.Knowledge
                 var matches = UnifyClauses(goal)
                     .ToList();
                 if (matches.Count == 0)
-                    throw new UndefinedPredicateException(new Clause(goal, new List<Goal>()).Canonical());
+                    return null;
 
                 bool shouldBreak = false;
                 foreach (var match in matches) {
@@ -119,7 +125,7 @@ namespace Ergo.Structures.Knowledge
 
         public SolutionGraph Solve(Query query)
         {
-            var graph = new SolutionGraph(Solve(query, null));
+            var graph = new SolutionGraph(Solve(query, null) ?? new SolutionGraph.Node(query));
             return graph;
         }
     }

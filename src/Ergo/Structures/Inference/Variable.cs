@@ -20,7 +20,7 @@ namespace Ergo.Structures.Inference
             get {
                 if (Reference.TryGetValue(out var t)) {
                     if (t is Variable v)
-                        return v != this && v.Instantiated;
+                        return v != this;
                     return true;
                 }
                 return false;
