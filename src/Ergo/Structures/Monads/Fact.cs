@@ -18,6 +18,11 @@ namespace Ergo.Structures.Monads
         public static readonly Fact True = From(new AtomicTerm("true")).ValueOrThrow("Unreachable");
         public static readonly Fact False = From(new AtomicTerm("false")).ValueOrThrow("Unreachable");
 
+        public static bool IsFalse(ITerm t)
+            => t.UnifyWith(False.Term).TryGetValue(out _);
+        public static bool IsTrue(ITerm t)
+            => t.UnifyWith(True.Term).TryGetValue(out _);
+
         public static Maybe<Fact> From(ITerm term)
         {
             if (term is AtomicTerm a)

@@ -20,8 +20,10 @@ namespace Ergo.Structures.Knowledge
 
             IEnumerable<Solution> SolutionsRec(Node node, Dictionary<string, ITerm> variables = null)
             {
+                if (node == null) yield break;
                 if(variables is null) {
                     variables = node.Value.Variables()
+                        .Where(v => !v.Name.StartsWith("_"))
                         .GroupBy(v => v.Name).Select(g => g.First())
                         .ToDictionary(v => v.Name, v => (ITerm)v);
                 }

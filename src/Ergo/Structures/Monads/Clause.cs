@@ -15,6 +15,7 @@ namespace Ergo.Structures.Monads
         public readonly int Arity => (Head.Term is CompoundTerm c ? c.Arity : 0);
         public readonly bool Factual;
 
+
         public Clause(Goal head, Query goals)
         {
             Head = head;
@@ -24,7 +25,11 @@ namespace Ergo.Structures.Monads
 
         public string Canonical()
         {
-            return $"{Head.Term.Canonical()}/{Arity}";
+            return Head.Term switch
+            {
+                CompoundTerm c => $"{c.Functor.Canonical()}/{Arity}",
+                _ => $"{Head.Term.Canonical()}/{Arity}"
+            };
         }
 
         public override string ToString()

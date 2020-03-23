@@ -1,4 +1,5 @@
-﻿using Ergo.Parser;
+﻿using Ergo.Exceptions;
+using Ergo.Parser;
 using Ergo.Structures.Knowledge;
 using System;
 using System.Linq;
@@ -21,25 +22,32 @@ namespace Demo
             while (Console.ReadLine() is { } line && line != "q") {
                 if (line.StartsWith(":") && ErgolParser.TryParseClause(line[1..]).TryGetValue(out var clause)) {
                     kb.AssertLast(clause);
-                    Console.WriteLine($"Asserted: {clause.Canonical()}.");
+                    Console.WriteLine($"\tAsserted: {clause.Canonical()}.");
                     goto input;
                 }
                 else if (ErgolParser.TryParseQuery(line).TryGetValue(out var query)) {
-                    var graph = kb.Solve(query);
+                    SolutionGraph graph;
+                    try {
+                        graph = kb.Solve(query);
+                    }
+                    catch(ErgoException ex) {
+                        Console.WriteLine($"\tERROR: {ex.Message}");
+                        goto input;
+                    }
                     var ans = graph
                         .Solutions()
                         .ToList();
                     if(ans.Count == 0) {
-                        Console.WriteLine("No.");
+                        Console.WriteLine("\tNo.");
                         goto input;
                     }
-                    if(ans.Count == 1 && ans.Single().Bindings.Length == 0) {
-                        Console.WriteLine("Yes.");
+                    var interestingSolutions = ans.Where(s => s.Bindings.Length > 0).ToList();
+                    if(interestingSolutions.Count == 0) {
+                        Console.WriteLine("\tYes.");
                         goto input;
                     }
-
                     Console.Write("\t   ");
-                    foreach (var solution in ans) {
+                    foreach (var solution in interestingSolutions) {
                         Console.WriteLine(solution.Canonical());
                         Console.Write("\t ; ");
                         Console.ReadKey(true);
@@ -47,7 +55,7 @@ namespace Demo
                     Console.Write("No.\n");
                 }
                 else {
-                    Console.WriteLine($"Bad input: {line}.");
+                    Console.WriteLine($"\tBad input: {line}.");
                 }
             input:
                 Console.Write("?- ");

@@ -14,6 +14,9 @@ namespace Ergo.Structures.Monads
         public readonly ITerm Term;
         public bool Satisfied => Term.IsGround();
 
+        public static readonly Goal False = From(Fact.False.Term).ValueOrThrow("Unreachable");
+        public static readonly Goal True = From(Fact.True.Term).ValueOrThrow("Unreachable");
+
         internal Goal(ITerm term)
         {
             Term = term;

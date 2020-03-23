@@ -18,7 +18,7 @@ namespace Ergo.Structures.Knowledge
         public string Canonical()
         {
             return String.Join(", ", 
-                Bindings.Where(v => !v.VariableName.StartsWith("_")).Select(v => v.Canonical()));
+                Bindings.Select(v => v.Canonical()));
         }
     }
 }

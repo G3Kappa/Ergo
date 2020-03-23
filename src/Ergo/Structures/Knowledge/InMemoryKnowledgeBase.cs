@@ -1,6 +1,8 @@
 ﻿using Ergo.Abstractions.Inference;
 using Ergo.Abstractions.Knowledge;
+using Ergo.Exceptions;
 using Ergo.Extensions.Inference;
+using Ergo.Parser;
 using Ergo.Structures.Inference;
 using Ergo.Structures.Monads;
 using System;
@@ -20,6 +22,7 @@ namespace Ergo.Structures.Knowledge
         public InMemoryKnowledgeBase()
         {
             _kb = new List<Clause>();
+            //AssertFirst(ErgolParser.Parse("", ErgolParser.TryParseClause));
         }
 
         public void AssertFirst(Clause assertion)
@@ -34,7 +37,6 @@ namespace Ergo.Structures.Knowledge
 
         internal IEnumerable<Clause> UnifyClauses(Goal g)
         {
-            // Replace all arguments of g with variables
             foreach (var clause in Data) {
                 if (g.Term.UnifyWith(clause.Head.Term).TryGetValue(out var u)) {
                     yield return ReplaceVariables(clause, Fact.From(u).ValueOrThrow(""));
@@ -68,7 +70,8 @@ namespace Ergo.Structures.Knowledge
             query = query.Goals
                 .Select(g => g.Term.ReplaceArguments((i, a) => a switch {
                     Variable v when v.Instantiated => v.Value,
-                    _ => a
+                    Variable v => v,
+                    _ => new Variable("_", Maybe.Some(a))
                 }))
                 .Select(t => Goal.From(t).ValueOrThrow(""))
                 .ToList();
@@ -76,14 +79,17 @@ namespace Ergo.Structures.Knowledge
             var current = new SolutionGraph.Node(query, parent);
             for (int i = 0; i < query.Goals.Count; ++i) {
                 var goal = query.Goals[i];
-                var matches = UnifyClauses(goal)
-                    .ToList();
-                if (matches.Count == 0) return new SolutionGraph.Node(query, parent);
-                if (matches.Count == 1 && goal.Satisfied) {
-                    if(i == query.Goals.Count - 1)
-                        current.Children.Add(new SolutionGraph.Node(query, parent));
+                if (Fact.IsFalse(goal.Term)) {
+                    return null;
+                }
+                else if (Fact.IsTrue(goal.Term)) {
+                    current.Children.Add(new SolutionGraph.Node(goal, parent));
                     continue;
                 }
+                var matches = UnifyClauses(goal)
+                    .ToList();
+                if (matches.Count == 0)
+                    throw new UndefinedPredicateException(new Clause(goal, new List<Goal>()).Canonical());
 
                 bool shouldBreak = false;
                 foreach (var match in matches) {
@@ -94,14 +100,16 @@ namespace Ergo.Structures.Knowledge
                         var subQuery = query.Skip(i + 1).ToList();
                         var newBody = ReplaceVariables(new Clause(match.Head, subQuery), (Fact)match.Head)
                             .Body;
-                        if(newBody.Count() > 0) {
-                            node.Children.Add(Solve(newBody, node));
+                        if (newBody.Count() > 0) {
+                            if (Solve(newBody, node) is { } s) {
+                                node.Children.Add(s);
+                            }
                         }
                         current.Children.Add(node);
                         shouldBreak = true;
                     }
-                    else {
-                        current.Children.Add(Solve(match.Body, current));
+                    else if (Solve(match.Body, current) is { } s) {
+                        current.Children.Add(s);
                     }
                 }
                 if (shouldBreak) break;
@@ -111,8 +119,10 @@ namespace Ergo.Structures.Knowledge
 
         public SolutionGraph Solve(Query query)
         {
-            return new SolutionGraph(Solve(query, null));
+            var graph = new SolutionGraph(Solve(query, null));
+            return graph;
         }
-
     }
+
 }
+

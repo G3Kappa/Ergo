@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -20,7 +21,7 @@ namespace Ergo.Parser
         private static readonly string _Complex = $@"(?<functor>{_AtomicString})\s*(?<arguments>\(.*?\))\s*";
         private static readonly string _ClauseBody = $@"(?<indent>\s*)(?<body>{_Complex}|{_Term})\s*(?<token>,|\.)\s*$";
         private static readonly string _ClauseHead = $@"(?<indent>\s*)(?<head>{_Complex}|{_Term})\s*(?<token>:-|\.)\s*$";
-        private static readonly string _ArgCleaner = $@"^\s*(?<arg>({_Complex}|{_Term}))\s*,.*$";
+        private static readonly string _ArgCleaner = $@"^\s*(?<arg>({_Complex}|{_Term}))\s*(?<sep>,).*$";
 
         public static readonly Regex Variable = new Regex(_Variable, DefaultOptions);
         public static readonly Regex Constant = new Regex($@"
@@ -36,5 +37,18 @@ namespace Ergo.Parser
         public static readonly Regex ClauseHead = new Regex(_ClauseHead, DefaultOptions);
         public static readonly Regex ClauseBody = new Regex(_ClauseBody, DefaultOptions);
         public static readonly Regex ArgCleaner = new Regex(_ArgCleaner, DefaultOptions);
+
+        public static IEnumerable<string> SplitByGroup(string source, Regex expr, string groupName)
+        {
+            var indices = expr.Matches(source)
+                .Select(m => m.Groups[groupName].Index)
+                .ToArray();
+            var x = 0;
+            for (int i = 0; i < indices.Length; i++) {
+                yield return source[x..i];
+                x = i;
+            }
+            yield return source[x..];
+        }
     }
 }

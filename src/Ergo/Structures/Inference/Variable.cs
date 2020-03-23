@@ -11,6 +11,8 @@ namespace Ergo.Structures.Inference
     {
         private static int _GID = -1;
         public static int GlobalId() => _GID = ++_GID % 100;
+        public readonly bool IsTemporary;
+        public readonly bool IsIgnored;
 
         public string Name { get; }
         public Maybe<ITerm> Reference { get; set; }
@@ -39,9 +41,12 @@ namespace Ergo.Structures.Inference
             // _    = anonymous discard
             // _Var = ignored singleton
             if (name == "_") {
-                Name = $"_G{GlobalId():00}";
+                Name = $"_G_{GlobalId():00}";
+                IsTemporary = true;
             }
             else {
+                if (name.StartsWith("_"))
+                    IsIgnored = true;
                 Name = name;
             }
             Reference = instance;
@@ -59,8 +64,10 @@ namespace Ergo.Structures.Inference
 
             static Maybe<ITerm> Update(Variable a, ITerm bi)
             {
-                if(a.Instantiated) {
-                    if (a.Value.UnifyWith(bi).TryGetValue(out var u)) {
+                if(a.Instantiated && a.Reference.ValueOrThrow("") is { } aRef) {
+                    if (bi is Variable bv && bv.Instantiated)
+                        bi = bv.Value;
+                    if (aRef.UnifyWith(bi).TryGetValue(out var u)) {
                         return new Variable(a.Name, Maybe.Some(u));
                     }
                     else return Maybe.None;
