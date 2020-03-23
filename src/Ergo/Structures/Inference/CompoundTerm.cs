@@ -40,7 +40,7 @@ namespace Ergo.Structures.Inference
                 for (int i = 0; i < a.Arity; i++) {
                     if(b.Arguments[i] is Variable v) {
                         if(TryGetOrInitialize(v, out var _v)
-                        && _v.UnifyWith(a.Arguments[i]).TryGetValue(out var argVar)) {
+                        && a.Arguments[i].UnifyWith(_v).TryGetValue(out var argVar)) {
                             vars[v.Name] = (Variable)argVar;
                             args[i] = argVar;
                         }
