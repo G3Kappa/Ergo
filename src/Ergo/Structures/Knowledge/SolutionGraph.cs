@@ -34,7 +34,7 @@ namespace Ergo.Structures.Knowledge
                     if (rootVars.ContainsKey(v.Key))
                         rootVars[v.Key] = v.Value;
                 }
-                if (rootVars.All(v => v.Value.IsGround())) {
+                if (rootVars.Count > 0 && rootVars.All(v => v.Value.IsGround())) {
                     yield return new Solution(rootVars.Select(v => new Solution.Binding(v.Key, v.Value.Value)).ToArray());
                 }
                 foreach (var child in node.Children) {

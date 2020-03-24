@@ -20,11 +20,9 @@ namespace Tests.Knowledge
             kb.AssertLast(ErgolParser.Parse("fact.", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("not_a_fact :--> false.", ErgolParser.TryParseClause));
             var res = kb.Solve(ErgolParser.Parse("fact.", ErgolParser.TryParseQuery));
-            var sol = res.Solutions().ToList();
-            Assert.Single(sol);
+            Assert.Single(res.Root.Children);
             res = kb.Solve(ErgolParser.Parse("not_a_fact.", ErgolParser.TryParseQuery));
-            sol = res.Solutions().ToList();
-            Assert.Empty(sol);
+            Assert.Empty(res.Root.Children);
         }
 
         [Fact]
