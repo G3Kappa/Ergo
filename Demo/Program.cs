@@ -34,7 +34,7 @@ namespace Demo
                         var ans = graph
                             .Solutions()
                             .ToList();
-                        if (ans.Count == 1 && graph.Root.Children.Count == 0) {
+                        if (ans.Count == 0 && graph.Root.Children.Count == 0) {
                             Console.WriteLine("\tNo.");
                             goto input;
                         }

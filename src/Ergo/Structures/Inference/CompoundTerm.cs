@@ -47,7 +47,14 @@ namespace Ergo.Structures.Inference
                         else return Maybe.None;
                     }
                     else if(a.Arguments[i].UnifyWith(b.Arguments[i]).TryGetValue(out var arg)) {
-                        args[i] = arg;
+                        if(arg is Variable vArg && TryGetOrInitialize(vArg, out var ret)) {
+                            if(!vArg.UnifyWith(ret).TryGetValue(out _)) return Maybe.None;
+
+                            args[i] = ret;
+                        }
+                        else {
+                            args[i] = arg;
+                        }
                     }
                     else return Maybe.None;
                 }
