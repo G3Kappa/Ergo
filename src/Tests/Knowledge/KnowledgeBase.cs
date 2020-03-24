@@ -34,8 +34,7 @@ namespace Tests.Knowledge
             var sol = res.Solutions().ToList();
             Assert.Single(sol);
             res = kb.Solve(ErgolParser.Parse("fact(A, A).", ErgolParser.TryParseQuery));
-            sol = res.Solutions().ToList();
-            Assert.Empty(sol);
+            Assert.Null(res.Root);
             kb.AssertLast(ErgolParser.Parse("fact(one, one, two).", ErgolParser.TryParseClause));
             res = kb.Solve(ErgolParser.Parse("fact(A, A, B).", ErgolParser.TryParseQuery));
             sol = res.Solutions().ToList();
