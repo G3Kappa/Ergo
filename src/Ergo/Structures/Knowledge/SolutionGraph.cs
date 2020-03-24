@@ -17,31 +17,31 @@ namespace Ergo.Structures.Knowledge
         public IEnumerable<Solution> Solutions()
         {
             // Walk the graph and enumerate all solutions
-            return SolutionsRec(Root);
+            var rootVars = Root.Value.Variables()
+                    .GroupBy(v => v.Name).Select(g => g.First())
+                    .ToDictionary(v => v.Name);
+            return SolutionsRec(Root, rootVars);
 
-            IEnumerable<Solution> SolutionsRec(Node node, Dictionary<string, ITerm> variables = null)
+            IEnumerable<Solution> SolutionsRec(Node node, Dictionary<string, Variable> rootVars)
             {
                 if (node == null) yield break;
-                if(variables is null) {
-                    variables = node.Value.Variables()
-                        .Where(v => !v.Name.StartsWith("_"))
-                        .GroupBy(v => v.Name).Select(g => g.First())
-                        .ToDictionary(v => v.Name, v => (ITerm)v);
+                var vars = node.Value.Variables()
+                    .Where(v => rootVars.ContainsKey(v.Name))
+                    .GroupBy(v => v.Name).Select(g => g.First())
+                    .ToDictionary(v => v.Name);
+                rootVars = rootVars.ToDictionary(k => k.Key, k => k.Value);
+                foreach (var v in vars) {
+                    if (rootVars.ContainsKey(v.Key))
+                        rootVars[v.Key] = v.Value;
                 }
-                else if(node.Children.Count == 0 && variables.All(t => t.Value.IsGround())) {
-                    yield return new Solution(variables.Select(v => new Solution.Binding(v.Key, v.Value)).ToArray());
+                if (rootVars.All(v => v.Value.IsGround())) {
+                    yield return new Solution(rootVars.Select(v => new Solution.Binding(v.Key, v.Value.Value)).ToArray());
                 }
-
-                foreach (var c in node.Children) {
-                    var cVars = c.Value.Variables()
-                        .GroupBy(v => v.Name).Select(g => g.First())
-                        .ToDictionary(v => v.Name);
-                    var newVars = variables
-                        .ToDictionary(v => v.Key, v => cVars.TryGetValue(v.Key, out var cV) ? cV.Value : v.Value);
-                    foreach (var s in SolutionsRec(c, newVars))
+                foreach (var child in node.Children) {
+                    foreach (var s in SolutionsRec(child, rootVars)) {
                         yield return s;
+                    }
                 }
-
             }
         }
     }

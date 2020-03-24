@@ -11,10 +11,6 @@ namespace Demo
         static void Main(string[] args)
         {
             var kb = new InMemoryKnowledgeBase();
-            kb.AssertLast(ErgolParser.Parse("fact.", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("fact(john).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("fact(jack).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("fact(jane).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("loves(john, jane).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("loves(jack, jane).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("jealous(A, B) :-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
@@ -38,7 +34,7 @@ namespace Demo
                         var ans = graph
                             .Solutions()
                             .ToList();
-                        if (ans.Count == 0 && graph.Root.Children.Count == 0) {
+                        if (ans.Count == 1 && graph.Root.Children.Count == 0) {
                             Console.WriteLine("\tNo.");
                             goto input;
                         }

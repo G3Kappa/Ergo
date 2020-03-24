@@ -38,11 +38,14 @@ namespace Ergo.Structures.Knowledge
         internal IEnumerable<Clause> UnifyClauses(Goal g)
         {
             var any = false;
+            //g = Goal.From(g.Term.ReplaceArguments((i, a) => a switch { _ => new Variable("_", Maybe.Some(a)) }))
+            //    .ValueOrThrow("");
             var gFunc = g.Term switch { CompoundTerm c => c.Functor, AtomicTerm a => a.Atom, _ => null };
             foreach (var clause in Data) {
                 var hFunc = clause.Head.Term switch { CompoundTerm c => c.Functor, AtomicTerm a => a.Atom, _ => null };
+                var head = clause.Head.Term;//.ReplaceArguments((i, a) => a switch { _ => new Variable("_", Maybe.Some(a)) });
                 any |= gFunc.UnifyWith(hFunc).TryGetValue(out _);
-                if (g.Term.UnifyWith(clause.Head.Term).TryGetValue(out var u)) {
+                if (g.Term.UnifyWith(head).TryGetValue(out var u)) {
                     yield return ReplaceVariables(clause, Fact.From(u).ValueOrThrow(""));
                 }
             }
@@ -73,15 +76,6 @@ namespace Ergo.Structures.Knowledge
 
         private SolutionGraph.Node Solve(Query query, SolutionGraph.Node parent)
         {
-            query = query.Goals
-                .Select(g => g.Term.ReplaceArguments((i, a) => a switch {
-                    Variable v when v.Instantiated => v.Value,
-                    Variable v => v,
-                    _ => new Variable("_", Maybe.Some(a))
-                }))
-                .Select(t => Goal.From(t).ValueOrThrow(""))
-                .ToList();
-
             var current = new SolutionGraph.Node(query, parent);
             for (int i = 0; i < query.Goals.Count; ++i) {
                 var goal = query.Goals[i];

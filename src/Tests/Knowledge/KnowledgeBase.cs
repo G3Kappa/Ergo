@@ -50,7 +50,7 @@ namespace Tests.Knowledge
             var kb = new InMemoryKnowledgeBase();
             kb.AssertLast(ErgolParser.Parse("loves(marcellus, mia).", ErgolParser.TryParseClause));
             kb.AssertLast(ErgolParser.Parse("loves(vincent, mia).", ErgolParser.TryParseClause));
-            kb.AssertLast(ErgolParser.Parse("jealous(A, B):-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
+            kb.AssertLast(ErgolParser.Parse("jealous(A, B) :-\n\tloves(A, C),\n\tloves(B, C).", ErgolParser.TryParseClause));
             var res = kb.Solve(ErgolParser.Parse("jealous(X, Y).", ErgolParser.TryParseQuery));
             var sol = res.Solutions().ToList();
             Assert.Equal(4, sol.Count);
