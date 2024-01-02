@@ -221,7 +221,7 @@ public readonly struct Predicate : IExplainable
             Documentation
             , DeclaringModule
             , Head.Instantiate(ctx, vars)
-            , new NTuple(Body.Contents.Select(x => x.Instantiate(ctx, vars)), Head.Scope)
+            , (NTuple)Body.Instantiate(ctx, vars)
             , IsDynamic
             , IsExported
             , IsTailRecursive

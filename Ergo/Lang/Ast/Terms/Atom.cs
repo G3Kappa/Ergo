@@ -36,6 +36,7 @@ public readonly struct Atom : ITerm
                     || WellKnown.Lexemes.QuotablePunctuation.Contains(c))
             ));
     }
+    public TermNode ToNode(TermTree tree) => new StaticTermNode(this, tree, 0);
 
     public string Explain(bool canonical = false)
     {

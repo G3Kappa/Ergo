@@ -44,7 +44,13 @@ public readonly partial struct Complex : ITerm
     public Complex WithFunctor(Atom functor) => new(Operator, IsParenthesized, functor, Arguments, Scope);
     public Complex WithArguments(ImmutableArray<ITerm> args) => new(Operator, IsParenthesized, Functor, args, Scope);
     public Complex WithScope(Maybe<ParserScope> scope) => new(Operator, IsParenthesized, Functor, Arguments, scope);
-
+    public TermNode ToNode(TermTree tree)
+    {
+        var node = new StaticTermNode(Functor, tree, Arity);
+        for (var i = 0; i < Arity; ++i)
+            node.SetArg(0, Arguments[i].ToNode(tree));
+        return node;
+    }
     public string Explain(bool canonical = false)
     {
         if (!canonical && IsParenthesized)

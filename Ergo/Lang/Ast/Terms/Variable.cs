@@ -33,6 +33,7 @@ public readonly struct Variable : ITerm
         Scope = scope;
     }
 
+    public TermNode ToNode(TermTree tree) => new VariableTermNode(this, tree);
 
     public string Explain(bool canonical = false)
     {

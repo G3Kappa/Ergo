@@ -1,5 +1,19 @@
 ﻿namespace Ergo.Runtime;
 
+public readonly record struct RuntimePredicate(Signature Signature, ErgoVM.Op Op);
+
+public class KnowledgeRepo
+{
+    protected readonly List<RuntimePredicate> predicates = new();
+
+    protected static int GetVariantHashCode(ITerm head)
+    {
+        return head.NumberVars().GetHashCode();
+    }
+}
+
+
+
 public partial class ErgoVM
 {
     public static class Ops
