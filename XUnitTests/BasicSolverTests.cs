@@ -12,7 +12,7 @@ public class TermTreeTests : ErgoTests
     public void ShouldSerializeCorrectly()
     {
         var parsed = InterpreterScope.Parse<ITerm>("f(a, g(c, d), E)").GetOrThrow();
-        var tree = new TermTree();
+        var tree = new TermCache();
         var f = parsed.ToNode(tree);
         Assert.Equal(7, tree.GetFreeId().I);
         Const(new Atom("f"), 1);
@@ -24,26 +24,26 @@ public class TermTreeTests : ErgoTests
         Var(E, 6);
         Assert.Equal(6, f[tree.DefineVariable(E)].TreeIndex.I);
         Assert.Equal(3, f.Arity);
-        Assert.Equal(2, f[(TermTree.StructAddr)0].TreeIndex.I);
-        Assert.Equal(3, f[(TermTree.StructAddr)1].TreeIndex.I);
-        Assert.Equal(6, f[(TermTree.StructAddr)2].TreeIndex.I);
-        var g = f[(TermTree.StructAddr)1];
+        Assert.Equal(2, f[(TermCache.StructAddr)0].TreeIndex.I);
+        Assert.Equal(3, f[(TermCache.StructAddr)1].TreeIndex.I);
+        Assert.Equal(6, f[(TermCache.StructAddr)2].TreeIndex.I);
+        var g = f[(TermCache.StructAddr)1];
         Assert.Equal(2, g.Arity);
-        Assert.Equal(4, g[(TermTree.StructAddr)0].TreeIndex.I);
-        Assert.Equal(5, g[(TermTree.StructAddr)1].TreeIndex.I);
-        Assert.Equal(0, tree[(TermTree.NodeAddr)2].Arity);
-        Assert.Equal(0, tree[(TermTree.NodeAddr)4].Arity);
-        Assert.Equal(0, tree[(TermTree.NodeAddr)5].Arity);
-        Assert.Equal(0, tree[(TermTree.NodeAddr)6].Arity);
+        Assert.Equal(4, g[(TermCache.StructAddr)0].TreeIndex.I);
+        Assert.Equal(5, g[(TermCache.StructAddr)1].TreeIndex.I);
+        Assert.Equal(0, tree[(TermCache.NodeAddr)2].Arity);
+        Assert.Equal(0, tree[(TermCache.NodeAddr)4].Arity);
+        Assert.Equal(0, tree[(TermCache.NodeAddr)5].Arity);
+        Assert.Equal(0, tree[(TermCache.NodeAddr)6].Arity);
 
         void Const(Atom expected, int node)
         {
-            var k = ((StaticTermNode)tree[(TermTree.NodeAddr)node]).Functor;
+            var k = ((StaticTermNode)tree[(TermCache.NodeAddr)node]).Functor;
             Assert.Equal(expected, tree[k]);
         }
         void Var(Variable expected, int node)
         {
-            var k = ((VariableTermNode)tree[(TermTree.NodeAddr)node]).Variable;
+            var k = ((VariableTermNode)tree[(TermCache.NodeAddr)node]).Variable;
             Assert.Equal(expected, tree[k]);
         }
     }
@@ -52,7 +52,7 @@ public class TermTreeTests : ErgoTests
     {
         var pA = InterpreterScope.Parse<ITerm>("f(a, X, d)").GetOrThrow();
         var pB = InterpreterScope.Parse<ITerm>("f(Y, g(b, c), d)").GetOrThrow();
-        var t = new TermTree();
+        var t = new TermCache();
         var (a, b) = (pA.ToNode(t), pB.ToNode(t));
         var map = new TermTreeSubstitutionMap(t);
         a.Unify(b, map);
@@ -66,6 +66,28 @@ public class TermTreeTests : ErgoTests
         Assert.Equal(ta2, tb2);
         Assert.NotEqual(ta1, ta2);
         Assert.NotEqual(tb1, tb2);
+    }
+
+    [Theory]
+    [InlineData("a", "A", false)]
+    [InlineData("A", "B", true)]
+    [InlineData("x(A, A)", "x(B, C)", false)]
+    [InlineData("x(A, A)", "x(B, B)", true)]
+    [InlineData("x(A, A)", "x(A, B)", false)]
+    [InlineData("x(A, B)", "x(C, D)", true)]
+    [InlineData("x(A, B)", "x(B, A)", true)]
+    [InlineData("x(A, B)", "x(C, A)", true)]
+    public void ShouldProduceCorrectVariantHashCodes(string a, string b, bool equal)
+    {
+        var pA = InterpreterScope.Parse<ITerm>(a).GetOrThrow();
+        var pB = InterpreterScope.Parse<ITerm>(b).GetOrThrow();
+        var t = new TermCache();
+        var hA = pA.ToNode(t).GetVariantHashCode();
+        var hB = pB.ToNode(t).GetVariantHashCode();
+        if (equal)
+            Assert.Equal(hA, hB);
+        else
+            Assert.NotEqual(hA, hB);
     }
 }
 

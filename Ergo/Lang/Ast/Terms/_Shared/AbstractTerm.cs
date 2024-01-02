@@ -61,7 +61,7 @@ public abstract class AbstractTerm : ITerm
     public abstract ITerm Substitute(Substitution s);
     public ITerm Substitute(IEnumerable<Substitution> s) => s.Aggregate((ITerm)this, (a, b) => a.Substitute(b));
     public abstract Maybe<SubstitutionMap> Unify(ITerm other);
-    public virtual TermNode ToNode(TermTree tree) => CanonicalForm.ToNode(tree);
+    public virtual TermNode ToNode(TermCache tree) => CanonicalForm.ToNode(tree);
     public override bool Equals(object obj)
     {
         if (obj is ITerm t)
