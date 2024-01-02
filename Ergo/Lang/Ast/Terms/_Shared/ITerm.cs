@@ -5,33 +5,58 @@ namespace Ergo.Lang.Ast;
 
 public sealed class TermTree
 {
+    public readonly record struct VarAddr(int I) { public static explicit operator VarAddr(int a) => new(a); };
+    public readonly record struct ConstAddr(int I) { public static explicit operator ConstAddr(int a) => new(a); };
+    public readonly record struct StructAddr(int I) { public static explicit operator StructAddr(int a) => new(a); };
+    public readonly record struct NodeAddr(int I) { public static explicit operator NodeAddr(int a) => new(a); };
+
+    internal readonly Dictionary<ConstAddr, Atom> constants = new();
+    internal readonly Dictionary<VarAddr, Variable> variables = new();
     internal readonly List<TermNode> nodes = new() { new InvalidTermNode() };
-    internal readonly Dictionary<(int TreeIndex, string VariableIndex), (int TreeIndex, int StructIndex)> variableSubstructures = new();
-    internal readonly Queue<int> recycledIds = new();
+    internal readonly Dictionary<(NodeAddr TreeIndex, VarAddr VariableIndex), (NodeAddr TreeIndex, StructAddr StructIndex)> variableSubstructures = new();
+    internal readonly Queue<NodeAddr> recycledIds = new();
 
-    public TermNode this[int i] => nodes[i];
+    public TermNode this[NodeAddr i] => nodes[i.I];
+    public Atom this[ConstAddr i] => constants[i];
+    public Variable this[VarAddr i] => variables[i];
 
-    public int GetFreeId() => recycledIds.TryDequeue(out var id) ? id : nodes.Count;
-    internal void Add(TermNode node) => nodes[node.TreeIndex] = node;
+    public ConstAddr DefineConstant(Atom a)
+    {
+        var i = new ConstAddr(a.GetHashCode());
+# if DEBUG
+        if (constants.TryGetValue(i, out var oldValue))
+            Debug.Assert(oldValue.Equals(a));
+#endif
+        constants[i] = a;
+        return i;
+    }
+
+    public VarAddr DefineVariable(Variable v)
+    {
+        var i = new VarAddr(v.GetHashCode());
+# if DEBUG
+        if (variables.TryGetValue(i, out var oldValue))
+            Debug.Assert(oldValue.Equals(v));
+#endif
+        variables[i] = v;
+        return i;
+    }
+
+    public NodeAddr GetFreeId() => recycledIds.TryDequeue(out var id) ? id : new(nodes.Count);
+    internal void Add(TermNode node) => nodes.Insert(node.TreeIndex.I, node);
 }
 
-public sealed class TermTreeSubstitutionMap
+public sealed class TermTreeSubstitutionMap(TermTree tree)
 {
-    private readonly Dictionary<int, TermTree> trees = new();
-    private readonly Dictionary<(int TreeHash, int TreeIndex, string VarIndex), (int OldNode, int NewNode)> map = new();
+    private readonly Dictionary<(TermTree.NodeAddr TreeIndex, TermTree.VarAddr VarIndex), (TermTree.NodeAddr OldNode, TermTree.NodeAddr NewNode)> map = new();
 
-    public void Add(TermTree tree, int treeIndex, string varIndex, int oldValue, int newValue)
-    {
-        var treeHash = tree.GetHashCode();
-        map[(treeHash, treeIndex, varIndex)] = (oldValue, newValue);
-        trees[treeHash] = tree;
-    }
+    public void Add(TermTree.NodeAddr treeIndex, TermTree.VarAddr varIndex, TermTree.NodeAddr oldValue, TermTree.NodeAddr newValue)
+        => map[(treeIndex, varIndex)] = (oldValue, newValue);
 
     public void ApplyForwards()
     {
-        foreach (var ((treeHash, treeIndex, varIndex), (oldNode, newNode)) in map)
+        foreach (var ((treeIndex, varIndex), (oldNode, newNode)) in map)
         {
-            var tree = trees[treeHash];
             Debug.Assert(tree[treeIndex][varIndex].TreeIndex == oldNode);
             tree[treeIndex][varIndex] = tree[newNode];
         }
@@ -39,9 +64,8 @@ public sealed class TermTreeSubstitutionMap
 
     public void ApplyBackwards()
     {
-        foreach (var ((treeHash, treeIndex, varIndex), (oldNode, newNode)) in map)
+        foreach (var ((treeIndex, varIndex), (oldNode, newNode)) in map)
         {
-            var tree = trees[treeHash];
             Debug.Assert(tree[treeIndex][varIndex].TreeIndex == newNode);
             tree[treeIndex][varIndex] = tree[oldNode];
         }
@@ -50,45 +74,61 @@ public sealed class TermTreeSubstitutionMap
 
 public abstract class TermNode : IDisposable
 {
-    public readonly int TreeIndex;
+    public readonly TermTree.NodeAddr TreeIndex;
     public readonly TermTree Tree;
-    protected readonly int[] structure;
+    public readonly int Arity;
+    protected readonly TermTree.NodeAddr[] structure;
     internal int refCount;
 
     internal TermNode(TermTree tree, int size)
     {
-        structure = size == 0 ? ([]) : (new int[size]);
-        TreeIndex = tree.GetFreeId();
-        Tree.Add(this);
+        structure = size == 0 ? ([]) : (new TermTree.NodeAddr[Arity = size]);
+        if (tree != null)
+        {
+            TreeIndex = tree.GetFreeId();
+            (Tree = tree).Add(this);
+        }
     }
 
-    public void SetArg(int index, TermNode node)
+    public void SetArg(TermTree.StructAddr index, TermNode node)
     {
-        if (node is VariableTermNode { Variable.Name: var varIndex })
+        if (node is VariableTermNode { Variable: var varIndex })
             Tree.variableSubstructures[(TreeIndex, varIndex)] = (node.TreeIndex, index);
-        structure[index] = node.TreeIndex;
+        structure[index.I] = node.TreeIndex;
         node.refCount++;
     }
 
-    public TermNode this[string variable]
+    public TermNode this[TermTree.VarAddr addr]
     {
-        get => Tree.nodes[Tree.variableSubstructures[(TreeIndex, variable)].TreeIndex];
-        set => structure[Tree.variableSubstructures[(TreeIndex, variable)].StructIndex] = value.TreeIndex;
+        get => Tree.nodes[Tree.variableSubstructures[(TreeIndex, addr)].TreeIndex.I];
+        set
+        {
+            var sub = Tree.variableSubstructures[(TreeIndex, addr)];
+            structure[sub.StructIndex.I] = value.TreeIndex;
+            Tree.variableSubstructures[(TreeIndex, addr)] = (value.TreeIndex, sub.StructIndex);
+        }
     }
 
-    public bool Unify(TermNode other, TermTreeSubstitutionMap map, int parentIndex = 0, int otherParentIndex = 0)
+    public TermNode this[TermTree.StructAddr addr]
     {
+        get => Tree[structure[addr.I]];
+    }
+
+    public bool Unify(TermNode other, TermTreeSubstitutionMap map, TermTree.NodeAddr parentIndex = default, TermTree.NodeAddr otherParentIndex = default)
+    {
+        if (Tree != other.Tree)
+            throw new InvalidOperationException();
         if (TreeIndex == other.TreeIndex)
             return true;
         var variableUnif = false;
-        if (this is VariableTermNode { Variable.Name: var varIndex })
+        if (this is VariableTermNode { Variable: var varIndex })
         {
-            map.Add(Tree, parentIndex, varIndex, TreeIndex, other.TreeIndex);
+            map.Add(parentIndex, varIndex, TreeIndex, other.TreeIndex);
             variableUnif |= true;
         }
-        if (other is VariableTermNode { Variable.Name: var otherVarIndex })
+        if (other is VariableTermNode { Variable: var otherVarIndex })
         {
-            map.Add(other.Tree, otherParentIndex, otherVarIndex, other.TreeIndex, TreeIndex);
+            map.Add(otherParentIndex, otherVarIndex, other.TreeIndex, TreeIndex);
             variableUnif |= true;
         }
         if (variableUnif)
@@ -101,12 +141,14 @@ public abstract class TermNode : IDisposable
             return false;
         for (int i = 0; i < structure.Length; ++i)
         {
-            var (a, b) = (Tree.nodes[structure[i]], other.Tree.nodes[other.structure[i]]);
+            var (a, b) = (Tree.nodes[structure[i].I], other.Tree.nodes[other.structure[i].I]);
             if (!a.Unify(b, map, TreeIndex, other.TreeIndex))
                 return false;
         }
         return true;
     }
+
+    public abstract ITerm ToTerm();
 
     public virtual void Dispose()
     {
@@ -114,8 +156,8 @@ public abstract class TermNode : IDisposable
         Tree.recycledIds.Enqueue(TreeIndex);
         for (int i = 0; i < structure.Length; i++)
         {
-            var node = Tree.nodes[structure[i]];
-            if (node is VariableTermNode { Variable.Name: var varIndex })
+            var node = Tree.nodes[structure[i].I];
+            if (node is VariableTermNode { Variable: var varIndex })
                 Tree.variableSubstructures.Remove((TreeIndex, varIndex));
             if (--node.refCount == 0)
             {
@@ -129,16 +171,27 @@ internal sealed class InvalidTermNode : TermNode
 {
     public InvalidTermNode() : base(null, 0) { }
     public override void Dispose() => throw new InvalidOperationException();
+    public override ITerm ToTerm() => throw new InvalidOperationException();
 }
 
 public sealed class StaticTermNode(Atom value, TermTree tree, int size) : TermNode(tree, size)
 {
-    public readonly Atom Functor = value;
+    public readonly TermTree.ConstAddr Functor = tree.DefineConstant(value);
+    public override ITerm ToTerm()
+    {
+        if (Arity == 0)
+            return Tree[Functor];
+        var args = new ITerm[Arity];
+        for (int i = 0; i < structure.Length; i++)
+            args[i] = tree[structure[i]].ToTerm();
+        return new Complex(Tree[Functor], args);
+    }
 }
 
 public sealed class VariableTermNode(Variable var, TermTree tree) : TermNode(tree, 0)
 {
-    public readonly Variable Variable = var;
+    public readonly TermTree.VarAddr Variable = tree.DefineVariable(var);
+    public override ITerm ToTerm() => Tree[Variable];
 }
 
 

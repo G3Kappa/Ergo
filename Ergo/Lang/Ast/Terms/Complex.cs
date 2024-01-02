@@ -48,7 +48,7 @@ public readonly partial struct Complex : ITerm
     {
         var node = new StaticTermNode(Functor, tree, Arity);
         for (var i = 0; i < Arity; ++i)
-            node.SetArg(0, Arguments[i].ToNode(tree));
+            node.SetArg(new(i), Arguments[i].ToNode(tree));
         return node;
     }
     public string Explain(bool canonical = false)

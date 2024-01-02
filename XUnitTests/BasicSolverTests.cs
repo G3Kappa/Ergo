@@ -1,6 +1,73 @@
 ﻿
 
+using Ergo.Lang.Ast;
+
 namespace Tests;
+
+public class TermTreeTests : ErgoTests
+{
+    public TermTreeTests(ErgoTestFixture fixture) : base(fixture) { }
+
+    [Fact]
+    public void ShouldSerializeCorrectly()
+    {
+        var parsed = InterpreterScope.Parse<ITerm>("f(a, g(c, d), E)").GetOrThrow();
+        var tree = new TermTree();
+        var f = parsed.ToNode(tree);
+        Assert.Equal(7, tree.GetFreeId().I);
+        Const(new Atom("f"), 1);
+        Const(new Atom("a"), 2);
+        Const(new Atom("g"), 3);
+        Const(new Atom("c"), 4);
+        Const(new Atom("d"), 5);
+        var E = new Variable("E");
+        Var(E, 6);
+        Assert.Equal(6, f[tree.DefineVariable(E)].TreeIndex.I);
+        Assert.Equal(3, f.Arity);
+        Assert.Equal(2, f[(TermTree.StructAddr)0].TreeIndex.I);
+        Assert.Equal(3, f[(TermTree.StructAddr)1].TreeIndex.I);
+        Assert.Equal(6, f[(TermTree.StructAddr)2].TreeIndex.I);
+        var g = f[(TermTree.StructAddr)1];
+        Assert.Equal(2, g.Arity);
+        Assert.Equal(4, g[(TermTree.StructAddr)0].TreeIndex.I);
+        Assert.Equal(5, g[(TermTree.StructAddr)1].TreeIndex.I);
+        Assert.Equal(0, tree[(TermTree.NodeAddr)2].Arity);
+        Assert.Equal(0, tree[(TermTree.NodeAddr)4].Arity);
+        Assert.Equal(0, tree[(TermTree.NodeAddr)5].Arity);
+        Assert.Equal(0, tree[(TermTree.NodeAddr)6].Arity);
+
+        void Const(Atom expected, int node)
+        {
+            var k = ((StaticTermNode)tree[(TermTree.NodeAddr)node]).Functor;
+            Assert.Equal(expected, tree[k]);
+        }
+        void Var(Variable expected, int node)
+        {
+            var k = ((VariableTermNode)tree[(TermTree.NodeAddr)node]).Variable;
+            Assert.Equal(expected, tree[k]);
+        }
+    }
+    [Fact]
+    public void ShouldUnifyCorrectly()
+    {
+        var pA = InterpreterScope.Parse<ITerm>("f(a, X, d)").GetOrThrow();
+        var pB = InterpreterScope.Parse<ITerm>("f(Y, g(b, c), d)").GetOrThrow();
+        var t = new TermTree();
+        var (a, b) = (pA.ToNode(t), pB.ToNode(t));
+        var map = new TermTreeSubstitutionMap(t);
+        a.Unify(b, map);
+        var (ta1, tb1) = (a.ToTerm(), b.ToTerm());
+        map.ApplyForwards();
+        var (ta2, tb2) = (a.ToTerm(), b.ToTerm());
+        map.ApplyBackwards();
+        var (ta3, tb3) = (a.ToTerm(), b.ToTerm());
+        Assert.Equal(ta1, ta3);
+        Assert.Equal(tb1, tb3);
+        Assert.Equal(ta2, tb2);
+        Assert.NotEqual(ta1, ta2);
+        Assert.NotEqual(tb1, tb2);
+    }
+}
 
 public class BasicSolverTests : ErgoTests
 {
