@@ -19,7 +19,7 @@ public abstract class DynamicPredicateBuiltIn : BuiltIn
         }
 
         pred = pred.Dynamic();
-        if (vm.KB.Scope.Modules.TryGetValue(pred.DeclaringModule, out var declaringModule) && declaringModule.ContainsExport(pred.Head.GetSignature()))
+        if (vm.KB.Scope.Modules.TryGetValue(pred.Module, out var declaringModule) && declaringModule.ContainsExport(pred.Head.GetSignature()))
             pred = pred.Exported();
         return pred.Qualified()
             .WithExecutionGraph(pred.ToExecutionGraph(vm.KB.DependencyGraph));
@@ -55,9 +55,9 @@ public abstract class DynamicPredicateBuiltIn : BuiltIn
                 return false;
             }
 
-            if (vm.KB.Scope.Entry != match.Predicate.DeclaringModule)
+            if (vm.KB.Scope.Entry != match.Predicate.Module)
             {
-                vm.Throw(ErgoVM.ErrorType.CannotRetractImportedPredicate, sig.Explain(), vm.KB.Scope.Entry.Explain(), match.Predicate.DeclaringModule.Explain());
+                vm.Throw(ErgoVM.ErrorType.CannotRetractImportedPredicate, sig.Explain(), vm.KB.Scope.Entry.Explain(), match.Predicate.Module.Explain());
                 return false;
             }
 

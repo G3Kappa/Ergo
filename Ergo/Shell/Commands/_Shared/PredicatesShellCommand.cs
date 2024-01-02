@@ -28,7 +28,7 @@ public abstract class PredicatesShellCommand : ShellCommand
             var yes = interpreterScope.ExceptionHandler.TryGet(() =>
             {
                 predicates = scope.KnowledgeBase
-                    .Where(x => x.DeclaringModule.Equals(t) || x.Unify(t).TryGetValue(out _));
+                    .Where(x => x.Module.Equals(t) || x.Unify(t).TryGetValue(out _));
                 if (predicates.Any())
                 {
                     shellScope = shellScope.WithInterpreterScope(interpreterScope);
@@ -61,8 +61,8 @@ public abstract class PredicatesShellCommand : ShellCommand
                 _ => 100
             })
             .Select(p => Explain
-                ? new[] { p.Head.GetSignature().Explain(), p.DeclaringModule.Explain(canonical: false), p.Explain(canonical: !Explain) }
-                : new[] { p.Head.GetSignature().Explain(), p.DeclaringModule.Explain(canonical: false), p.Documentation })
+                ? new[] { p.Head.GetSignature().Explain(), p.Module.Explain(canonical: false), p.Explain(canonical: !Explain) }
+                : new[] { p.Head.GetSignature().Explain(), p.Module.Explain(canonical: false), p.Documentation })
             .ToArray();
         if (explanations.Length == 0)
         {

@@ -5,10 +5,10 @@
 /// </summary>
 public abstract class GoalNode : DynamicNode
 {
-    public DependencyGraphNode Node { get; }
-    public GoalNode(DependencyGraphNode node, ITerm goal)
+    public DependencyGraphNode Dependency { get; }
+    public GoalNode(DependencyGraphNode dep, ITerm goal)
         : base(goal)
     {
-        Node = node;
+        Dependency = dep;
     }
 }

@@ -22,9 +22,9 @@ public sealed class Eval : MathBuiltIn
             if (args[0].Equals(new Atom(ret)))
                 return TrueNode.Instance;
         }
-        else if (node.Node.Graph.GetNode(WellKnown.Signatures.Unify).TryGetValue(out var unifyNode))
+        else if (node.Dependency.Graph.GetNode(WellKnown.Signatures.Unify).TryGetValue(out var unifyNode))
         {
-            return new BuiltInNode(unifyNode, Unify.MakeComplex(args[0], new Atom(ret)), node.Node.Graph.UnifyInstance);
+            return new BuiltInNode(unifyNode, Unify.MakeComplex(args[0], new Atom(ret)), node.Dependency.Graph.UnifyInstance);
         }
         return FalseNode.Instance;
     }

@@ -44,7 +44,7 @@ public readonly partial struct Complex : ITerm
     public Complex WithFunctor(Atom functor) => new(Operator, IsParenthesized, functor, Arguments, Scope);
     public Complex WithArguments(ImmutableArray<ITerm> args) => new(Operator, IsParenthesized, Functor, args, Scope);
     public Complex WithScope(Maybe<ParserScope> scope) => new(Operator, IsParenthesized, Functor, Arguments, scope);
-    public TermNode ToNode(TermCache tree)
+    public TermNode ToNode(TermStore tree)
     {
         var node = new StaticTermNode(Functor, tree, Arity);
         for (var i = 0; i < Arity; ++i)

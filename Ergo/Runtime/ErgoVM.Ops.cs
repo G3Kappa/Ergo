@@ -1,19 +1,5 @@
 ﻿namespace Ergo.Runtime;
 
-public readonly record struct RuntimePredicate(Signature Signature, ErgoVM.Op Op);
-
-public class KnowledgeRepo
-{
-    protected readonly List<RuntimePredicate> predicates = new();
-
-    protected static int GetVariantHashCode(ITerm head)
-    {
-        return head.NumberVars().GetHashCode();
-    }
-}
-
-
-
 public partial class ErgoVM
 {
     public static class Ops
@@ -92,14 +78,18 @@ public partial class ErgoVM
                     vm.PushChoice(Branch(branches[i]));
                 }
                 Branch(branches[0])(vm);
-
-                Op Branch(Op branch) => vm =>
-                {
-                    branch(vm);
-                    vm.SuccessToSolution();
-                };
             };
         }
+        public static Op Or2(Op a, Op b) => vm =>
+        {
+            vm.PushChoice(Branch(b));
+            Branch(a)(vm);
+        };
+        static Op Branch(Op branch) => vm =>
+        {
+            branch(vm);
+            vm.SuccessToSolution();
+        };
         public static Op IfThenElse(Op condition, Op consequence, Op alternative) => vm =>
         {
             var backupEnvironment = vm.CloneEnvironment();
@@ -231,7 +221,7 @@ public partial class ErgoVM
                                 .Where(s => bodyVars.Contains((Variable)s.Lhs));
                             // Substitute the tail call with this list, creating the new head, and qualify it with the current module.
                             newGoal = pred.Body.Contents.Last().Substitute(tcoSubs)
-                                .Qualified(pred.DeclaringModule);
+                                .Qualified(pred.Module);
                             // Remove all substitutions that are no longer relevant, including those we just used.
                             vm.Environment.RemoveRange(tcoSubs.Concat(matchEnum.Current.Substitutions));
                             vm.DiscardChoices(1); // We don't need the NextMatch choice point anymore.

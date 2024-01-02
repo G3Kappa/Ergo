@@ -100,7 +100,7 @@ public sealed class Unify : BuiltIn
             // The resulting unification has most of the redundant structure factored out so that it executes faster at runtime.
             // This should be especially noticeable in cases where there's very large structures with deep nesting like dicts.
             // TODO: This might potentially break some abstract forms like EntityAsTerm in FieroEngine. Test this rigorously.
-            return new BuiltInNode(node.Node, MakeComplex(lhs, rhs), node.BuiltIn);
+            return new BuiltInNode(node.Dependency, MakeComplex(lhs, rhs), node.BuiltIn);
         }
         return TrueNode.Instance;
     }

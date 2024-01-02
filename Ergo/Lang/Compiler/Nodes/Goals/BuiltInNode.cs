@@ -42,7 +42,7 @@ public class BuiltInNode : GoalNode
     public override ExecutionNode Instantiate(InstantiationContext ctx, Dictionary<string, Variable> vars = null)
     {
         if (IsGround) return this;
-        return new BuiltInNode(Node, Goal.Instantiate(ctx, vars), BuiltIn, compile: false)
+        return new BuiltInNode(Dependency, Goal.Instantiate(ctx, vars), BuiltIn, compile: false)
         {
             CompiledBuiltIn = CompiledBuiltIn
         };
@@ -50,7 +50,7 @@ public class BuiltInNode : GoalNode
     public override ExecutionNode Substitute(IEnumerable<Substitution> s)
     {
         if (IsGround) return this;
-        return new BuiltInNode(Node, Goal.Substitute(s), BuiltIn, compile: false)
+        return new BuiltInNode(Dependency, Goal.Substitute(s), BuiltIn, compile: false)
         {
             CompiledBuiltIn = CompiledBuiltIn
         };

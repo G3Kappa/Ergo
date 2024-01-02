@@ -148,7 +148,7 @@ public class Expansions : Library
                     }
                     yield return new Predicate(
                         p.Documentation,
-                        p.DeclaringModule,
+                        p.Module,
                         newHead,
                         new(newBody, p.Head.Scope),
                         p.IsDynamic,

@@ -58,7 +58,7 @@ public class Tabling : Library
                     match.Predicate.Head.GetQualification(out var head);
                     var auxPred = new Predicate(
                         match.Predicate.Documentation,
-                        match.Predicate.DeclaringModule,
+                        match.Predicate.Module,
                         head.WithFunctor(auxFunctor),
                         match.Predicate.Body,
                         match.Predicate.IsDynamic,

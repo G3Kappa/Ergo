@@ -13,7 +13,7 @@ public sealed class Not : BuiltIn
     public override ExecutionNode Optimize(BuiltInNode node)
     {
         var op = node.Goal.GetArguments()[0]
-            .ToExecutionNode(node.Node.Graph, ctx: new("NOT"))
+            .ToExecutionNode(node.Dependency.Graph, ctx: new("NOT"))
             .Optimize()
             .Compile();
         return new VirtualNode(vm =>

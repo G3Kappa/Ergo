@@ -7,7 +7,7 @@ namespace Ergo.Lang.Ast;
 [DebuggerDisplay("{ Explain(false) }")]
 public readonly struct Predicate : IExplainable
 {
-    public readonly Atom DeclaringModule;
+    public readonly Atom Module;
     public readonly ITerm Head;
     public readonly NTuple Body;
     public readonly string Documentation;
@@ -21,6 +21,8 @@ public readonly struct Predicate : IExplainable
     public readonly Maybe<ExecutionGraph> ExecutionGraph;
     //public readonly bool IsDeterminate;
     //public bool IsLastCallOptimizable => IsTailRecursive && IsDeterminate;
+
+    public TermNode ToNode(TermStore cache) => new Complex(WellKnown.Functors.Horn.First(), Head, Body).ToNode(cache);
 
     private static bool GetIsTailRecursive(ITerm head, NTuple body)
     {
@@ -54,7 +56,7 @@ public readonly struct Predicate : IExplainable
     {
         if (BuiltIn.TryGetValue(out var b1) && other.BuiltIn.TryGetValue(out var b2))
             return b1 == b2;
-        if (other.DeclaringModule != DeclaringModule)
+        if (other.Module != Module)
             return false;
         if (!other.Head.GetSignature().Equals(Head.GetSignature()))
             return false;
@@ -173,7 +175,7 @@ public readonly struct Predicate : IExplainable
     public Predicate(string desc, Atom module, ITerm head, NTuple body, bool dynamic, bool exported, bool tailRecursive, Maybe<ExecutionGraph> graph)
     {
         Documentation = desc;
-        DeclaringModule = module;
+        Module = module;
         Head = head;
         Body = body;
         IsDynamic = dynamic;
@@ -194,7 +196,7 @@ public readonly struct Predicate : IExplainable
     public Predicate(BuiltIn builtIn, Maybe<ITerm> head = default)
     {
         Documentation = $"<builtin> {builtIn.Documentation}";
-        DeclaringModule = builtIn.Signature.Module.GetOr(WellKnown.Modules.Stdlib);
+        Module = builtIn.Signature.Module.GetOr(WellKnown.Modules.Stdlib);
         if (!builtIn.Signature.Arity.TryGetValue(out var arity))
         {
             IsVariadic = true;
@@ -219,7 +221,7 @@ public readonly struct Predicate : IExplainable
         vars ??= new Dictionary<string, Variable>();
         return new Predicate(
             Documentation
-            , DeclaringModule
+            , Module
             , Head.Instantiate(ctx, vars)
             , (NTuple)Body.Instantiate(ctx, vars)
             , IsDynamic
@@ -268,26 +270,26 @@ public readonly struct Predicate : IExplainable
     {
         if (IsBuiltIn)
             return WithHead(Head.Substitute(s));
-        return new(Documentation, DeclaringModule, Head.Substitute(s), (NTuple)Body
+        return new(Documentation, Module, Head.Substitute(s), (NTuple)Body
             .Substitute(s), IsDynamic, IsExported, IsTailRecursive, ExecutionGraph.Select(g => g.Substitute(s)));
     }
     public Predicate WithExecutionGraph(Maybe<ExecutionGraph> newGraph)
     {
         if (IsBuiltIn)
             throw new NotSupportedException();
-        return new(Documentation, DeclaringModule, Head, Body, IsDynamic, IsExported, IsTailRecursive, newGraph);
+        return new(Documentation, Module, Head, Body, IsDynamic, IsExported, IsTailRecursive, newGraph);
     }
     public Predicate WithHead(ITerm newHead)
     {
         if (BuiltIn.TryGetValue(out var builtIn))
             return new(builtIn, Maybe.Some(newHead));
-        return new(Documentation, DeclaringModule, newHead, Body, IsDynamic, IsExported, IsTailRecursive, ExecutionGraph);
+        return new(Documentation, Module, newHead, Body, IsDynamic, IsExported, IsTailRecursive, ExecutionGraph);
     }
     public Predicate WithBody(NTuple newBody)
     {
         if (IsBuiltIn)
             throw new NotSupportedException();
-        return new(Documentation, DeclaringModule, Head, newBody, IsDynamic, IsExported, IsTailRecursive, ExecutionGraph);
+        return new(Documentation, Module, Head, newBody, IsDynamic, IsExported, IsTailRecursive, ExecutionGraph);
     }
     public Predicate WithModuleName(Atom module)
     {
@@ -299,19 +301,19 @@ public readonly struct Predicate : IExplainable
     {
         if (IsBuiltIn)
             throw new NotSupportedException();
-        return new(Documentation, DeclaringModule, Head, Body, true, IsExported, IsTailRecursive, ExecutionGraph);
+        return new(Documentation, Module, Head, Body, true, IsExported, IsTailRecursive, ExecutionGraph);
     }
     public Predicate Exported()
     {
         if (IsBuiltIn)
             return this;
-        return new(Documentation, DeclaringModule, Head, Body, IsDynamic, true, IsTailRecursive, ExecutionGraph);
+        return new(Documentation, Module, Head, Body, IsDynamic, true, IsTailRecursive, ExecutionGraph);
     }
     public Predicate Qualified()
     {
         if (Head.IsQualified)
             return this;
-        return WithHead(Head.Qualified(DeclaringModule));
+        return WithHead(Head.Qualified(Module));
     }
     public Predicate Unqualified()
     {

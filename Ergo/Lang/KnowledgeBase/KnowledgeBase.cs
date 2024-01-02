@@ -73,7 +73,7 @@ public partial class KnowledgeBase : IReadOnlyCollection<Predicate>
             return Maybe.Some<IList<Predicate>>(list);
         // Matching exported predicates with qualification
         if (sig.Module.TryGetValue(out var module) && Get(sig.WithModule(default)).TryGetValue(out var list_))
-            return Maybe.Some<IList<Predicate>>(list_.Where(p => p.IsExported || p.DeclaringModule.Equals(module)).ToArray());
+            return Maybe.Some<IList<Predicate>>(list_.Where(p => p.IsExported || p.Module.Equals(module)).ToArray());
         return default;
     }
 

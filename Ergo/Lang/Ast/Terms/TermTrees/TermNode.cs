@@ -4,15 +4,15 @@ namespace Ergo.Lang.Ast;
 
 public abstract class TermNode : IDisposable
 {
-    public readonly TermCache.NodeAddr TreeIndex;
-    public readonly TermCache Tree;
+    public readonly TermStore.NodeAddr TreeIndex;
+    public readonly TermStore Tree;
     public readonly int Arity;
-    protected readonly TermCache.NodeAddr[] structure;
+    protected readonly TermStore.NodeAddr[] structure;
     internal int refCount;
 
-    internal TermNode(TermCache tree, int size)
+    internal TermNode(TermStore tree, int size)
     {
-        structure = size == 0 ? ([]) : (new TermCache.NodeAddr[Arity = size]);
+        structure = size == 0 ? ([]) : (new TermStore.NodeAddr[Arity = size]);
         if (tree != null)
         {
             TreeIndex = tree.GetFreeId();
@@ -20,7 +20,7 @@ public abstract class TermNode : IDisposable
         }
     }
 
-    public void SetArg(TermCache.StructAddr index, TermNode node)
+    public void SetArg(TermStore.StructAddr index, TermNode node)
     {
         if (node is VariableTermNode { Variable: var varIndex })
             Tree.variableSubstructures[(TreeIndex, varIndex)] = (node.TreeIndex, index);
@@ -28,7 +28,7 @@ public abstract class TermNode : IDisposable
         node.refCount++;
     }
 
-    public TermNode this[TermCache.VarAddr addr]
+    public TermNode this[TermStore.VarAddr addr]
     {
         get => Tree.nodes[Tree.variableSubstructures[(TreeIndex, addr)].TreeIndex.I];
         set
@@ -39,12 +39,12 @@ public abstract class TermNode : IDisposable
         }
     }
 
-    public TermNode this[TermCache.StructAddr addr]
+    public TermNode this[TermStore.StructAddr addr]
     {
         get => Tree[structure[addr.I]];
     }
 
-    public bool Unify(TermNode other, TermTreeSubstitutionMap map, TermCache.NodeAddr parentIndex = default, TermCache.NodeAddr otherParentIndex = default)
+    public bool Unify(TermNode other, TermTreeSubstitutionMap map, TermStore.NodeAddr parentIndex = default, TermStore.NodeAddr otherParentIndex = default)
     {
         if (Tree != other.Tree)
             throw new InvalidOperationException();

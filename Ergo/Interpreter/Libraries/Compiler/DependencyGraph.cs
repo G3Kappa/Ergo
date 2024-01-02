@@ -88,7 +88,7 @@ public class DependencyGraph
 
     public static IEnumerable<Signature> ExtractCalledSignatures(Predicate pred, KnowledgeBase kb)
     {
-        var scope = kb.Scope.WithCurrentModule(pred.DeclaringModule);
+        var scope = kb.Scope.WithCurrentModule(pred.Module);
         return Predicate.GetGoals(pred)
             .SelectMany(c => ExtractCalledSignatures(c, scope, kb));
     }

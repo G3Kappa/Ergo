@@ -1,6 +1,7 @@
 ﻿
 
 using Ergo.Lang.Ast;
+using Ergo.Runtime;
 
 namespace Tests;
 
@@ -9,12 +10,32 @@ public class TermTreeTests : ErgoTests
     public TermTreeTests(ErgoTestFixture fixture) : base(fixture) { }
 
     [Fact]
-    public void ShouldSerializeCorrectly()
+    public void ShouldIndexPredicates()
+    {
+        var store = new TermStore();
+        var kb = new NewKnowledgeBase(store);
+
+        var f = new Atom("a");
+        var c1 = new Complex(f, new Atom(1), new Atom(2));
+        var p1 = Predicate.FromOp(WellKnown.Modules.User, c1, ErgoVM.Ops.NoOp, exported: true);
+        var p2 = Predicate.FromOp(WellKnown.Modules.User, c1, ErgoVM.Ops.NoOp, exported: false);
+
+        kb.AssertZ(p1);
+        kb.AssertZ(p2);
+        var n1 = c1.ToNode(store);
+        var m1 = kb.GetMatches(default, n1);
+        var m2 = kb.GetMatches(WellKnown.Modules.User, n1);
+        Assert.Single(m1);
+        Assert.Equal(2, m2.Count());
+    }
+
+    [Fact]
+    public void ShouldSerializeCorrectlyTerm()
     {
         var parsed = InterpreterScope.Parse<ITerm>("f(a, g(c, d), E)").GetOrThrow();
-        var tree = new TermCache();
-        var f = parsed.ToNode(tree);
-        Assert.Equal(7, tree.GetFreeId().I);
+        var store = new TermStore();
+        var f = parsed.ToNode(store);
+        Assert.Equal(7, store.GetFreeId().I);
         Const(new Atom("f"), 1);
         Const(new Atom("a"), 2);
         Const(new Atom("g"), 3);
@@ -22,37 +43,38 @@ public class TermTreeTests : ErgoTests
         Const(new Atom("d"), 5);
         var E = new Variable("E");
         Var(E, 6);
-        Assert.Equal(6, f[tree.DefineVariable(E)].TreeIndex.I);
+        Assert.Equal(6, f[store.DefineVariable(E)].TreeIndex.I);
         Assert.Equal(3, f.Arity);
-        Assert.Equal(2, f[(TermCache.StructAddr)0].TreeIndex.I);
-        Assert.Equal(3, f[(TermCache.StructAddr)1].TreeIndex.I);
-        Assert.Equal(6, f[(TermCache.StructAddr)2].TreeIndex.I);
-        var g = f[(TermCache.StructAddr)1];
+        Assert.Equal(2, f[(TermStore.StructAddr)0].TreeIndex.I);
+        Assert.Equal(3, f[(TermStore.StructAddr)1].TreeIndex.I);
+        Assert.Equal(6, f[(TermStore.StructAddr)2].TreeIndex.I);
+        var g = f[(TermStore.StructAddr)1];
         Assert.Equal(2, g.Arity);
-        Assert.Equal(4, g[(TermCache.StructAddr)0].TreeIndex.I);
-        Assert.Equal(5, g[(TermCache.StructAddr)1].TreeIndex.I);
-        Assert.Equal(0, tree[(TermCache.NodeAddr)2].Arity);
-        Assert.Equal(0, tree[(TermCache.NodeAddr)4].Arity);
-        Assert.Equal(0, tree[(TermCache.NodeAddr)5].Arity);
-        Assert.Equal(0, tree[(TermCache.NodeAddr)6].Arity);
+        Assert.Equal(4, g[(TermStore.StructAddr)0].TreeIndex.I);
+        Assert.Equal(5, g[(TermStore.StructAddr)1].TreeIndex.I);
+        Assert.Equal(0, store[(TermStore.NodeAddr)2].Arity);
+        Assert.Equal(0, store[(TermStore.NodeAddr)4].Arity);
+        Assert.Equal(0, store[(TermStore.NodeAddr)5].Arity);
+        Assert.Equal(0, store[(TermStore.NodeAddr)6].Arity);
 
         void Const(Atom expected, int node)
         {
-            var k = ((StaticTermNode)tree[(TermCache.NodeAddr)node]).Functor;
-            Assert.Equal(expected, tree[k]);
+            var k = ((StaticTermNode)store[(TermStore.NodeAddr)node]).Functor;
+            Assert.Equal(expected, store[k]);
         }
         void Var(Variable expected, int node)
         {
-            var k = ((VariableTermNode)tree[(TermCache.NodeAddr)node]).Variable;
-            Assert.Equal(expected, tree[k]);
+            var k = ((VariableTermNode)store[(TermStore.NodeAddr)node]).Variable;
+            Assert.Equal(expected, store[k]);
         }
     }
+
     [Fact]
     public void ShouldUnifyCorrectly()
     {
         var pA = InterpreterScope.Parse<ITerm>("f(a, X, d)").GetOrThrow();
         var pB = InterpreterScope.Parse<ITerm>("f(Y, g(b, c), d)").GetOrThrow();
-        var t = new TermCache();
+        var t = new TermStore();
         var (a, b) = (pA.ToNode(t), pB.ToNode(t));
         var map = new TermTreeSubstitutionMap(t);
         a.Unify(b, map);
@@ -81,7 +103,7 @@ public class TermTreeTests : ErgoTests
     {
         var pA = InterpreterScope.Parse<ITerm>(a).GetOrThrow();
         var pB = InterpreterScope.Parse<ITerm>(b).GetOrThrow();
-        var t = new TermCache();
+        var t = new TermStore();
         var hA = pA.ToNode(t).GetVariantHashCode();
         var hB = pB.ToNode(t).GetVariantHashCode();
         if (equal)

@@ -2,24 +2,8 @@
 
 namespace Ergo.Lang.Ast;
 
-public class NewKnowledgeBase(TermCache cache)
+public sealed class TermStore
 {
-    public readonly record struct OpAddr(TermCache.ConstAddr Functor, TermCache.Arity Arity);
-
-
-    public readonly TermCache Cache = cache;
-    internal readonly Dictionary<OpAddr, ErgoVM.Op> ops = new();
-
-
-
-
-
-
-}
-
-public sealed class TermCache
-{
-    public readonly record struct Arity(int I) { public static explicit operator Arity(int a) => new(a); };
     public readonly record struct VarAddr(int I) { public static explicit operator VarAddr(int a) => new(a); };
     public readonly record struct ConstAddr(int I) { public static explicit operator ConstAddr(int a) => new(a); };
     public readonly record struct StructAddr(int I) { public static explicit operator StructAddr(int a) => new(a); };

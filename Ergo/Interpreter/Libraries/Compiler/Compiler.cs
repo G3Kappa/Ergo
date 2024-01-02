@@ -77,7 +77,7 @@ public class Compiler : Library
                     {
                         newClause.ExecutionGraph.Do(x => x.Compile());
                         // Hooks can be defined in non-existent modules, but otherwise we want to cache the compiled predicate.
-                        if (kbc.KnowledgeBase.Scope.Modules.TryGetValue(newClause.DeclaringModule, out var module))
+                        if (kbc.KnowledgeBase.Scope.Modules.TryGetValue(newClause.Module, out var module))
                             module.Program.KnowledgeBase
                                  .Replace(clause, newClause);
                         kbc.KnowledgeBase.Replace(clause, newClause);

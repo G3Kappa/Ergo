@@ -3,11 +3,11 @@ using System.Diagnostics;
 
 namespace Ergo.Lang.Ast;
 
-public sealed class TermTreeSubstitutionMap(TermCache tree)
+public sealed class TermTreeSubstitutionMap(TermStore tree)
 {
-    private readonly Dictionary<(TermCache.NodeAddr TreeIndex, TermCache.VarAddr VarIndex), (TermCache.NodeAddr OldNode, TermCache.NodeAddr NewNode)> map = new();
+    private readonly Dictionary<(TermStore.NodeAddr TreeIndex, TermStore.VarAddr VarIndex), (TermStore.NodeAddr OldNode, TermStore.NodeAddr NewNode)> map = new();
 
-    public void Add(TermCache.NodeAddr treeIndex, TermCache.VarAddr varIndex, TermCache.NodeAddr oldValue, TermCache.NodeAddr newValue)
+    public void Add(TermStore.NodeAddr treeIndex, TermStore.VarAddr varIndex, TermStore.NodeAddr oldValue, TermStore.NodeAddr newValue)
         => map[(treeIndex, varIndex)] = (oldValue, newValue);
 
     public void ApplyForwards()
@@ -37,7 +37,7 @@ public interface ITerm : IComparable<ITerm>, IEquatable<ITerm>, IExplainable
     bool IsQualified { get; }
     bool IsParenthesized { get; }
     IEnumerable<Variable> Variables { get; }
-    TermNode ToNode(TermCache tree);
+    TermNode ToNode(TermStore tree);
 
     Maybe<Atom> GetFunctor() => this switch
     {
